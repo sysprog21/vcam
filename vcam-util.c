@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 
     memset(&dev, 0x00, sizeof(struct vcam_device_spec));
 
-    // Process cmd line options
+    /* Process command line options */
     do {
         next_option =
             getopt_long(argc, argv, short_options, long_options, NULL);

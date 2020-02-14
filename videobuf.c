@@ -37,7 +37,7 @@ int vcam_in_queue_setup(struct vcam_in_queue *q, size_t size)
     int i;
     int ret = 0;
 
-    // Initialize buffers
+    /* Initialize buffers */
     for (i = 0; i < 2; i++) {
         ret = init_vcam_in_buffer(&q->buffers[i], size);
         if (ret)
@@ -51,10 +51,10 @@ int vcam_in_queue_setup(struct vcam_in_queue *q, size_t size)
         return ret;
     }
 
-    // Initialize dummy buffer
+    /* Initialize dummy buffer */
     memset(&q->dummy, 0x00, sizeof(struct vcam_in_buffer));
 
-    // Initialize pointers to buffers
+    /* Initialize pointers to buffers */
     q->pending = &q->buffers[0];
     q->ready = &q->buffers[1];
 
@@ -120,7 +120,7 @@ static int vcam_start_streaming(struct vb2_queue *q, unsigned int count)
 {
     struct vcam_device *dev = q->drv_priv;
 
-    // Try to start kernel thread
+    /* Try to start kernel thread */
     dev->sub_thr_id = kthread_create(submitter_thread, dev, "vcam_submitter");
     if (!dev->sub_thr_id) {
         pr_err("Failed to create kernel thread\n");
@@ -138,12 +138,12 @@ static void vcam_stop_streaming(struct vb2_queue *vb2_q)
     struct vcam_out_queue *q = &dev->vcam_out_vidq;
     unsigned long flags = 0;
 
-    // Stop running threads
+    /* Stop running threads */
     if (dev->sub_thr_id)
         kthread_stop(dev->sub_thr_id);
 
     dev->sub_thr_id = NULL;
-    // Empty buffer queue
+    /* Empty buffer queue */
     spin_lock_irqsave(&dev->out_q_slock, flags);
     while (!list_empty(&q->active)) {
         struct vcam_out_buffer *buf =

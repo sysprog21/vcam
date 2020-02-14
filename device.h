@@ -47,35 +47,35 @@ struct vcam_device {
     struct v4l2_device v4l2_dev;
     struct video_device vdev;
 
-    // input buffer
+    /* input buffer */
     struct vcam_in_queue in_queue;
     spinlock_t in_q_slock;
     spinlock_t in_fh_slock;
     bool fb_isopen;
 
-    // output buffer
+    /* output buffer */
     struct vb2_queue vb_out_vidq;
     struct vcam_out_queue vcam_out_vidq;
     spinlock_t out_q_slock;
-    // Output framerate
+    /* Output framerate */
     struct v4l2_fract output_fps;
 
-    // Input framebuffer
+    /* Input framebuffer */
     char vcam_fb_fname[FB_NAME_MAXLENGTH];
     struct proc_dir_entry *vcam_fb_procf;
     struct mutex vcam_mutex;
 
-    // Submitter thread
+    /* Submitter thread */
     struct task_struct *sub_thr_id;
 
-    // Format descriptor
+    /* Format descriptor */
     size_t nr_fmts;
     struct vcam_device_format out_fmts[PIXFMTS_MAX];
 
     struct v4l2_pix_format output_format;
     struct v4l2_pix_format input_format;
 
-    // Conversion switches
+    /* Conversion switches */
     bool conv_pixfmt_on;
     bool conv_res_on;
 };

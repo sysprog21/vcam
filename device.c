@@ -632,7 +632,7 @@ int submitter_thread(void *data)
         struct vcam_out_buffer *buf;
         int timeout_ms, timeout;
 
-        // Do something and sleep
+        /* Do something and sleep */
         int computation_time_jiff = jiffies;
         spin_lock_irqsave(&dev->out_q_slock, flags);
         if (list_empty(&q->active)) {
@@ -672,7 +672,7 @@ int submitter_thread(void *data)
                 dev->output_fps.denominator / dev->output_fps.numerator;
         }
 
-        // Compute timeout, modify FPS
+        /* Compute timeout and update FPS */
         computation_time_jiff = jiffies - computation_time_jiff;
         timeout = msecs_to_jiffies(timeout_ms);
         if (computation_time_jiff > timeout) {
@@ -732,20 +732,19 @@ struct vcam_device *create_vcam_device(size_t idx,
     if (!vcam)
         goto vcam_alloc_failure;
 
-    // Assign name of v4l2 device
+    /* Register V4L2 device */
     snprintf(vcam->v4l2_dev.name, sizeof(vcam->v4l2_dev.name), "%s-%d",
              vcam_dev_name, (int) idx);
-    // Try to register
     ret = v4l2_device_register(NULL, &vcam->v4l2_dev);
     if (ret) {
         pr_err("v4l2 registration failure\n");
         goto v4l2_registration_failure;
     }
 
-    // Initialize buffer queue and device structures
+    /* Initialize buffer queue and device structures */
     mutex_init(&vcam->vcam_mutex);
 
-    // Try to initialize output buffer
+    /* Try to initialize output buffer */
     ret = vcam_out_videobuf2_setup(vcam);
     if (ret) {
         pr_err(" failed to initialize output videobuffer\n");
@@ -776,21 +775,20 @@ struct vcam_device *create_vcam_device(size_t idx,
         goto video_regdev_failure;
     }
 
-    // Initialize framebuffer device
+    /* Initialize framebuffer device */
     snprintf(vcam->vcam_fb_fname, sizeof(vcam->vcam_fb_fname), "vcamfb%d",
              MINOR(vcam->vdev.dev.devt));
-
     pde = init_framebuffer((const char *) vcam->vcam_fb_fname, vcam);
     if (!pde)
         goto framebuffer_failure;
     vcam->vcam_fb_procf = pde;
     vcam->fb_isopen = 0;
 
-    // Setup conversion capabilities
+    /* Setup conversion capabilities */
     vcam->conv_res_on = (bool) allow_scaling;
     vcam->conv_pixfmt_on = (bool) allow_pix_conversion;
 
-    // Alloc and set initial format
+    /* Alloc and set initial format */
     if (vcam->conv_pixfmt_on) {
         for (i = 0; i < ARRAY_SIZE(vcam_supported_fmts); i++)
             vcam->out_fmts[i] = vcam_supported_fmts[i];
@@ -808,7 +806,7 @@ struct vcam_device *create_vcam_device(size_t idx,
 
     vcam->sub_thr_id = NULL;
 
-    // Init input
+    /* Initialize input */
     ret = vcam_in_queue_setup(&vcam->in_queue, vcam->input_format.sizeimage);
     if (ret) {
         pr_err("Failed to initialize input buffer\n");
@@ -824,7 +822,7 @@ input_buffer_failure:
 framebuffer_failure:
     destroy_framebuffer(vcam->vcam_fb_fname);
 video_regdev_failure:
-    // TODO vb2 deinit
+    /* TODO: vb2 deinit */
 vb2_out_init_failed:
     v4l2_device_unregister(&vcam->v4l2_dev);
 v4l2_registration_failure:

@@ -67,7 +67,7 @@ static ssize_t vcamfb_write(struct file *file,
         return 0;
     }
 
-    // reset buffer if last write is too old
+    /* Reset buffer if last write is too old */
     if (buf->filled && (((int32_t) jiffies - buf->jiffies) / HZ)) {
         pr_debug("Reseting jiffies, difference %d\n",
                  ((int32_t) jiffies - buf->jiffies));
@@ -75,8 +75,8 @@ static ssize_t vcamfb_write(struct file *file,
     }
     buf->jiffies = jiffies;
 
-    // Fill the buffer
-    // TODO real buffer handling
+    /* Fill the buffer */
+    /* TODO: implement real buffer handling */
     to_be_copyied = length;
     if ((buf->filled + to_be_copyied) > waiting_bytes)
         to_be_copyied = waiting_bytes - buf->filled;
