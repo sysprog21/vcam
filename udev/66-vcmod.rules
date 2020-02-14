@@ -1,0 +1,1 @@
+ACTION=="add", KERNEL=="vcamctl", MODE="0774", GROUP="video"
