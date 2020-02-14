@@ -7,7 +7,7 @@ device driver with raw framebuffer input.
 
 After running `make`, you should be able to generate the following files:
 * `vcam.ko` - Linux kernel module;
-* `vcam-util` - Sample tility to configure virtual camera device(s);
+* `vcam-util` - Sample utility to configure virtual camera device(s);
 
 Before loading this kernel module, you have to satisfy its dependency:
 ```shell
