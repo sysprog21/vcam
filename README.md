@@ -9,8 +9,13 @@ After running `make`, you should be able to generate the following files:
 * `vcam.ko` - Linux kernel module;
 * `vcam-util` - Sample tility to configure virtual camera device(s);
 
-The module can be loaded to Linux kernel by runnning the command:
+Before loading this kernel module, you have to satisfy its dependency:
+```shell
+$ sudo modprobe videobuf2_vmalloc videobuf2_v4l2
 ```
+
+The module can be loaded to Linux kernel by runnning the command:
+```shell
 $ sudo insmod vcam.ko
 ```
 
@@ -28,13 +33,18 @@ Run `vcam-util --help` for more information about how to configure, add or
 remove virtual camera devices.
 e.g. list all available virtual camera device(s):
 ```shell
-sudo ./vcam-util -l
+$ sudo ./vcam-util -l
 ```
 
 You should get:
 ```
 Available virtual V4L2 compatible devices:
 1. vcamfb0(640,480,rgb24) -> /dev/video0
+```
+
+Install `v4l-utils` for retrieving more information:
+```shell
+$ sudo apt install v4l-utils
 ```
 
 You can use this command to check if the driver is ok:
