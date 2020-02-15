@@ -1,3 +1,5 @@
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/proc_fs.h>
 #include <linux/spinlock.h>
 
