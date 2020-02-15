@@ -89,7 +89,7 @@ static ssize_t vcamfb_write(struct file *file,
 
     if (copy_from_user(data + buf->filled, (void *) buffer, to_be_copyied) !=
         0) {
-        printk(KERN_WARNING "Failed to copy_from_user!");
+        pr_warn("Failed to copy_from_user!");
     }
     buf->filled += to_be_copyied;
 

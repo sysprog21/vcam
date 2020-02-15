@@ -46,7 +46,7 @@ static ssize_t ctl_read(struct file *file,
     if (len < length)
         len = length;
     if (copy_to_user(buffer, str, len) != 0)
-        printk(KERN_WARNING "Failed to copy_to_user!");
+        pr_warn("Failed to copy_to_user!");
     return len;
 }
 
@@ -170,7 +170,7 @@ static long ctl_ioctl(struct file *file,
     long ret = copy_from_user(&dev_spec, (void __user *) ioctl_param,
                               sizeof(struct vcam_device_spec));
     if (ret != 0) {
-        printk(KERN_WARNING "Failed to copy_from_user!");
+        pr_warn("Failed to copy_from_user!");
         return -1;
     }
     switch (ioctl_cmd) {
@@ -188,7 +188,7 @@ static long ctl_ioctl(struct file *file,
         if (!ret) {
             if (copy_to_user((void *__user *) ioctl_param, &dev_spec,
                              sizeof(struct vcam_device_spec)) != 0) {
-                printk(KERN_WARNING "Failed to copy_to_user!");
+                pr_warn("Failed to copy_to_user!");
                 ret = -1;
             }
         }
