@@ -3,6 +3,22 @@
 This Linux module implements a simplified virtual V4L2 compatible camera
 device driver with raw framebuffer input.
 
+## Prerequisite
+
+The following packages must be installed before building `vcam`.
+
+In order to compile the kernel driver successfully, package versions
+of currently used kernel, kernel-devel and kernel-headers need to be matched.
+```shell
+$ sudo apt install linux-headers-$(uname -r)
+```
+
+Since `vcam` is built with [V4L2](https://en.wikipedia.org/wiki/Video4Linux) (Video4Linux, second version),
+`v4l-utils` is necessary for retrieving more information and function validation:
+```shell
+$ sudo apt install v4l-utils
+```
+
 ## Build and Run
 
 After running `make`, you should be able to generate the following files:
@@ -40,11 +56,6 @@ You should get:
 ```
 Available virtual V4L2 compatible devices:
 1. vcamfb0(640,480,rgb24) -> /dev/video0
-```
-
-Install `v4l-utils` for retrieving more information:
-```shell
-$ sudo apt install v4l-utils
 ```
 
 You can use this command to check if the driver is ok:
