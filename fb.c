@@ -113,13 +113,12 @@ struct proc_dir_entry *init_framebuffer(const char *proc_fname,
                                         struct vcam_device *dev)
 {
     struct proc_dir_entry *procf;
-    int ret = 0;
 
     pr_debug("Creating framebuffer for /dev/%s\n", proc_fname);
     procf = proc_create_data(proc_fname, 0666, NULL, &vcamfb_fops, dev);
     if (!procf) {
         pr_err("Failed to create procfs entry\n");
-        ret = -ENODEV;
+        /* FIXME: report -ENODEV */
         goto failure;
     }
 
