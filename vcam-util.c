@@ -1,5 +1,3 @@
-#include "vcam.h"
-
 #include <fcntl.h>
 #include <getopt.h>
 #include <stdbool.h>
@@ -9,6 +7,8 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include "vcam.h"
 
 static const char *short_options = "hcm:r:ls:p:d:";
 

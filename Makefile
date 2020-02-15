@@ -2,16 +2,15 @@ target = vcam
 vcam-objs = module.o control.o device.o videobuf.o fb.o
 obj-m = $(target).o
 
-CFLAGS_util = -O2 -Wall -Wextra -pedantic -std=c99
+CFLAGS_utils = -O2 -Wall -Wextra -pedantic -std=c99
 
 .PHONY: all
-all: vcam-util
+all: kmod vcam-util
 
-vcam-util: vcam-util.c
-	$(CC) $(CFLAGS_util) -o $@ $<
+vcam-util: vcam-util.c vcam.h
+	$(CC) $(CFLAGS_utils) -o $@ $<
 
-.PHONY: all
-all:
+kmod:
 	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 .PHONY: clean
