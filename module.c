@@ -8,7 +8,7 @@ MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
 MODULE_DESCRIPTION("Virtual V4L2 compatible camera device driver");
 
-#define CTRL_DEV_NAME "vcamctl"
+#define CONTROL_DEV_NAME "vcamctl"
 #define VCAM_DEV_NAME "vcam"
 
 unsigned short devices_max = 8;
@@ -35,12 +35,12 @@ const char *vcam_dev_name = VCAM_DEV_NAME;
 static int __init vcam_init(void)
 {
     int i;
-    int ret = create_ctldev(CTRL_DEV_NAME);
+    int ret = create_control_device(CONTROL_DEV_NAME);
     if (ret)
         goto failure;
 
     for (i = 0; i < create_devices; i++)
-        create_new_vcam_device(NULL);
+        request_vcam_device(NULL);
 
 failure:
     return ret;
@@ -48,7 +48,7 @@ failure:
 
 static void __exit vcam_exit(void)
 {
-    destroy_ctldev();
+    destroy_control_device();
 }
 
 module_init(vcam_init);

@@ -24,20 +24,20 @@ struct control_device {
 
 static struct control_device *ctldev = NULL;
 
-static int ctl_open(struct inode *inode, struct file *file)
+static int control_open(struct inode *inode, struct file *file)
 {
     return 0;
 }
 
-static int ctl_release(struct inode *inode, struct file *file)
+static int control_release(struct inode *inode, struct file *file)
 {
     return 0;
 }
 
-static ssize_t ctl_read(struct file *file,
-                        char __user *buffer,
-                        size_t length,
-                        loff_t *offset)
+static ssize_t control_read(struct file *file,
+                            char __user *buffer,
+                            size_t length,
+                            loff_t *offset)
 {
     int len;
     static const char *str = "Virtual V4L2 compatible camera device\n";
@@ -50,16 +50,16 @@ static ssize_t ctl_read(struct file *file,
     return len;
 }
 
-static ssize_t ctl_write(struct file *file,
-                         const char __user *buffer,
-                         size_t length,
-                         loff_t *offset)
+static ssize_t control_write(struct file *file,
+                             const char __user *buffer,
+                             size_t length,
+                             loff_t *offset)
 {
     pr_debug("write %ld %dB\n", (long) buffer, (int) length);
     return length;
 }
 
-static int ctl_ioctl_get_device(struct vcam_device_spec *dev_spec)
+static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *dev;
     if (ctldev->vcam_device_count <= dev_spec->idx)
@@ -79,7 +79,8 @@ static int ctl_ioctl_get_device(struct vcam_device_spec *dev_spec)
     return 0;
 }
 
-static int ctl_ioctl_modify_input_setting(struct vcam_device_spec *dev_spec)
+static int control_iocontrol_modify_input_setting(
+    struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *dev;
     unsigned long flags = 0;
@@ -132,7 +133,7 @@ static int ctl_ioctl_modify_input_setting(struct vcam_device_spec *dev_spec)
     return 0;
 }
 
-static int ctl_ioctl_destroy_device(struct vcam_device_spec *dev_spec)
+static int control_iocontrol_destroy_device(struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *dev;
     unsigned long flags = 0;
@@ -162,31 +163,31 @@ static int ctl_ioctl_destroy_device(struct vcam_device_spec *dev_spec)
     return 0;
 }
 
-static long ctl_ioctl(struct file *file,
-                      unsigned int ioctl_cmd,
-                      unsigned long ioctl_param)
+static long control_ioctl(struct file *file,
+                          unsigned int iocontrol_cmd,
+                          unsigned long iocontrol_param)
 {
     struct vcam_device_spec dev_spec;
-    long ret = copy_from_user(&dev_spec, (void __user *) ioctl_param,
+    long ret = copy_from_user(&dev_spec, (void __user *) iocontrol_param,
                               sizeof(struct vcam_device_spec));
     if (ret != 0) {
         pr_warn("Failed to copy_from_user!");
         return -1;
     }
-    switch (ioctl_cmd) {
+    switch (iocontrol_cmd) {
     case VCAM_IOCTL_CREATE_DEVICE:
         pr_debug("Requesing new device\n");
-        ret = create_new_vcam_device(&dev_spec);
+        ret = request_vcam_device(&dev_spec);
         break;
     case VCAM_IOCTL_DESTROY_DEVICE:
         pr_debug("Requesting removal of device\n");
-        ret = ctl_ioctl_destroy_device(&dev_spec);
+        ret = control_iocontrol_destroy_device(&dev_spec);
         break;
     case VCAM_IOCTL_GET_DEVICE:
         pr_debug("Get device(%d)\n", dev_spec.idx);
-        ret = ctl_ioctl_get_device(&dev_spec);
+        ret = control_iocontrol_get_device(&dev_spec);
         if (!ret) {
-            if (copy_to_user((void *__user *) ioctl_param, &dev_spec,
+            if (copy_to_user((void *__user *) iocontrol_param, &dev_spec,
                              sizeof(struct vcam_device_spec)) != 0) {
                 pr_warn("Failed to copy_to_user!");
                 ret = -1;
@@ -195,7 +196,7 @@ static long ctl_ioctl(struct file *file,
         break;
     case VCAM_IOCTL_MODIFY_SETTING:
         pr_debug("Modify setting(%d)\n", dev_spec.idx);
-        ret = ctl_ioctl_modify_input_setting(&dev_spec);
+        ret = control_iocontrol_modify_input_setting(&dev_spec);
         break;
     default:
         ret = -1;
@@ -209,7 +210,7 @@ static struct vcam_device_spec default_vcam_spec = {
     .pix_fmt = VCAM_PIXFMT_RGB24,
 };
 
-int create_new_vcam_device(struct vcam_device_spec *dev_spec)
+int request_vcam_device(struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *vcam;
     int idx;
@@ -261,7 +262,7 @@ return_res:
     return res;
 }
 
-static void destroy_control_device(struct control_device *dev)
+static void free_control_device(struct control_device *dev)
 {
     size_t i;
     for (i = 0; i < dev->vcam_device_count; i++)
@@ -274,16 +275,16 @@ static void destroy_control_device(struct control_device *dev)
     kfree(dev);
 }
 
-static struct file_operations ctl_fops = {
+static struct file_operations control_fops = {
     .owner = THIS_MODULE,
-    .read = ctl_read,
-    .write = ctl_write,
-    .open = ctl_open,
-    .release = ctl_release,
-    .unlocked_ioctl = ctl_ioctl,
+    .read = control_read,
+    .write = control_write,
+    .open = control_open,
+    .release = control_release,
+    .unlocked_ioctl = control_ioctl,
 };
 
-int __init create_ctldev(const char *dev_name)
+int __init create_control_device(const char *dev_name)
 {
     int ret = 0;
 
@@ -301,7 +302,7 @@ int __init create_ctldev(const char *dev_name)
         goto class_create_failure;
     }
 
-    cdev_init(&ctldev->cdev, &ctl_fops);
+    cdev_init(&ctldev->cdev, &control_fops);
     ctldev->cdev.owner = THIS_MODULE;
 
     ret = alloc_chrdev_region(&ctldev->dev_number, 0, 1, dev_name);
@@ -335,16 +336,16 @@ registration_failure:
     class_destroy(ctldev->dev_class);
 alloc_chrdev_error:
 class_create_failure:
-    destroy_control_device(ctldev);
+    free_control_device(ctldev);
     ctldev = NULL;
 kmalloc_failure:
     return ret;
 }
 
-void __exit destroy_ctldev(void)
+void __exit destroy_control_device(void)
 {
     if (ctldev) {
-        destroy_control_device(ctldev);
+        free_control_device(ctldev);
         ctldev = NULL;
     }
 }
