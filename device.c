@@ -771,7 +771,7 @@ struct vcam_device *create_vcam_device(size_t idx,
     snprintf(vdev->name, sizeof(vdev->name), "%s-%d", vcam_dev_name, (int) idx);
     video_set_drvdata(vdev, vcam);
 
-    ret = video_register_device(vdev, VFL_TYPE_GRABBER, -1);
+    ret = video_register_device(vdev, VFL_TYPE_VIDEO, -1);
     if (ret < 0) {
         pr_err("video_register_device failure\n");
         goto video_regdev_failure;

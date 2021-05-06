@@ -2,9 +2,11 @@
 
 #include <linux/proc_fs.h>
 #include <linux/spinlock.h>
+#include <linux/kernel.h>
 
 #include "fb.h"
 #include "videobuf.h"
+
 
 static int vcamfb_open(struct inode *ind, struct file *file)
 {
@@ -104,12 +106,13 @@ static ssize_t vcamfb_write(struct file *file,
     return to_be_copyied;
 }
 
-static struct file_operations vcamfb_fops = {
-    .owner = THIS_MODULE,
-    .open = vcamfb_open,
-    .release = vcamfb_release,
-    .write = vcamfb_write,
+
+static struct proc_ops  vcamfb_fops = {
+    .proc_open = vcamfb_open,
+    .proc_release = vcamfb_release,
+    .proc_write = vcamfb_write,
 };
+
 
 struct proc_dir_entry *init_framebuffer(const char *proc_fname,
                                         struct vcam_device *dev)
