@@ -290,6 +290,59 @@ static int vcam_enum_framesizes(struct file *filp,
     return 0;
 }
 
+static inline bool vb2_queue_is_busy(struct video_device *vdev, struct file *file)
+{
+	return vdev->queue->owner && vdev->queue->owner != file->private_data;
+}
+
+
+static void fill_buf_caps(struct vb2_queue *q, u32 *caps)
+{
+	*caps = V4L2_BUF_CAP_SUPPORTS_ORPHANED_BUFS;
+	if (q->io_modes & VB2_MMAP)
+		*caps |= V4L2_BUF_CAP_SUPPORTS_MMAP;
+	if (q->io_modes & VB2_USERPTR)
+		*caps |= V4L2_BUF_CAP_SUPPORTS_USERPTR;
+	if (q->io_modes & VB2_DMABUF)
+		*caps |= V4L2_BUF_CAP_SUPPORTS_DMABUF;
+	if (q->subsystem_flags & VB2_V4L2_FL_SUPPORTS_M2M_HOLD_CAPTURE_BUF)
+		*caps |= V4L2_BUF_CAP_SUPPORTS_M2M_HOLD_CAPTURE_BUF;
+#ifdef CONFIG_MEDIA_CONTROLLER_REQUEST_API
+	if (q->supports_requests)
+		*caps |= V4L2_BUF_CAP_SUPPORTS_REQUESTS;
+#endif
+}
+
+
+int vcam_vb2_ioctl_create_bufs(struct file *file, void *priv,
+			  struct v4l2_create_buffers *p)
+{
+    struct v4l2_format *f = &p->format;
+	struct video_device *vdev = video_devdata(file);
+	int res = vb2_verify_memory_type(vdev->queue, p->memory,
+			p->format.type);
+
+	p->index = vdev->queue->num_buffers;
+	fill_buf_caps(vdev->queue, &p->capabilities);
+	/*
+	 * If count == 0, then just check if memory and type are valid.
+	 * Any -EBUSY result from vb2_verify_memory_type can be mapped to 0.
+	 */
+	if (p->count == 0)
+		return res != -EBUSY ? res : 0;
+	if (res)
+		return res;
+	if (vb2_queue_is_busy(vdev, file))
+		return -EBUSY;
+    if (f->fmt.pix.sizeimage < 921600){
+        return -EINVAL;
+    }
+	res = vb2_create_bufs(vdev->queue, p);
+	if (res == 0)
+		vdev->queue->owner = file->private_data;
+	return res;
+}
+
 static const struct v4l2_ioctl_ops vcam_ioctl_ops = {
     .vidioc_querycap = vcam_querycap,
     .vidioc_enum_input = vcam_enum_input,
@@ -304,7 +357,7 @@ static const struct v4l2_ioctl_ops vcam_ioctl_ops = {
     .vidioc_enum_frameintervals = vcam_enum_frameintervals,
     .vidioc_enum_framesizes = vcam_enum_framesizes,
     .vidioc_reqbufs = vb2_ioctl_reqbufs,
-    .vidioc_create_bufs = vb2_ioctl_create_bufs,
+    .vidioc_create_bufs = vcam_vb2_ioctl_create_bufs,
     .vidioc_prepare_buf = vb2_ioctl_prepare_buf,
     .vidioc_querybuf = vb2_ioctl_querybuf,
     .vidioc_qbuf = vb2_ioctl_qbuf,
