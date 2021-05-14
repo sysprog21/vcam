@@ -4,6 +4,7 @@
 #include <linux/time.h>
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-vmalloc.h>
+#include <linux/random.h>
 
 #include "device.h"
 #include "fb.h"
@@ -483,6 +484,7 @@ static void submit_noinput_buffer(struct vcam_out_buffer *buf,
             yuyv_ptr++;
         }
     } else {
+        /*
         for (i = 0; i < 255; i++) {
             memset(vbuf_ptr, i, rowsize * stripe_size);
             vbuf_ptr += rowsize * stripe_size;
@@ -490,6 +492,8 @@ static void submit_noinput_buffer(struct vcam_out_buffer *buf,
 
         if (rows % 255)
             memset(vbuf_ptr, 0xff, rowsize * (rows % 255));
+        */
+        get_random_bytes(vbuf_ptr, rowsize * rows);
     }
 
     buf->vb.timestamp = ktime_get_ns();
