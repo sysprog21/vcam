@@ -1,5 +1,6 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
+#include <linux/version.h>
 #include <linux/spinlock.h>
 #include <linux/time.h>
 #include <media/videobuf2-core.h>
@@ -771,7 +772,12 @@ struct vcam_device *create_vcam_device(size_t idx,
     snprintf(vdev->name, sizeof(vdev->name), "%s-%d", vcam_dev_name, (int) idx);
     video_set_drvdata(vdev, vcam);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
+    ret = video_register_device(vdev, VFL_TYPE_VIDEO, -1);
+#else
     ret = video_register_device(vdev, VFL_TYPE_GRABBER, -1);
+#endif
+
     if (ret < 0) {
         pr_err("video_register_device failure\n");
         goto video_regdev_failure;
