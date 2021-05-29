@@ -1,8 +1,8 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-#include <linux/version.h>
 #include <linux/proc_fs.h>
 #include <linux/spinlock.h>
+#include <linux/version.h>
 
 #include "fb.h"
 #include "videobuf.h"
@@ -105,11 +105,11 @@ static ssize_t vcamfb_write(struct file *file,
     return to_be_copyied;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 static struct proc_ops vcamfb_fops = {
-     .proc_open = vcamfb_open,
-     .proc_release = vcamfb_release,
-     .proc_write = vcamfb_write,
+    .proc_open = vcamfb_open,
+    .proc_release = vcamfb_release,
+    .proc_write = vcamfb_write,
 };
 #else
 static struct file_operations vcamfb_fops = {
