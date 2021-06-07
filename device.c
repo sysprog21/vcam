@@ -3,6 +3,7 @@
 #include <linux/spinlock.h>
 #include <linux/time.h>
 #include <linux/version.h>
+#include <media/v4l2-image-sizes.h>
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-vmalloc.h>
 
@@ -40,6 +41,23 @@ static const struct v4l2_file_operations vcam_fops = {
     .unlocked_ioctl = video_ioctl2,
     .mmap = vb2_fop_mmap,
 };
+
+static const struct v4l2_frmsize_discrete vcam_sizes[] = {
+    {480, 360},
+    {VGA_WIDTH, VGA_HEIGHT},
+    {HD_720_WIDTH, HD_720_HEIGHT},
+};
+
+void vcam_update_format_cap(struct vcam_device *dev, bool keep_control)
+{
+    vcam_in_queue_destroy(&dev->in_queue);
+    dev->input_format.width = dev->output_format.width;
+    dev->input_format.height = dev->output_format.height;
+    dev->input_format.bytesperline = dev->output_format.bytesperline;
+    dev->input_format.sizeimage =
+        dev->input_format.height * dev->input_format.bytesperline;
+    vcam_in_queue_setup(&dev->in_queue, dev->input_format.sizeimage);
+}
 
 static int vcam_querycap(struct file *file,
                          void *priv,
@@ -131,6 +149,16 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         pr_debug("Resolution conversion is %d\n", dev->conv_res_on);
         f->fmt.pix.width = dev->output_format.width;
         f->fmt.pix.height = dev->output_format.height;
+    }
+
+    if (dev->conv_res_on) {
+        int n_avail = ARRAY_SIZE(vcam_sizes);
+        const struct v4l2_frmsize_discrete *sz = v4l2_find_nearest_size(
+            vcam_sizes, n_avail, width, height, vcam_sizes[n_avail - 1].width,
+            vcam_sizes[n_avail - 1].height);
+        f->fmt.pix.width = sz->width;
+        f->fmt.pix.height = sz->height;
+        vcam_update_format_cap(dev, false);
     }
 
     f->fmt.pix.field = V4L2_FIELD_NONE;
@@ -268,6 +296,14 @@ static int vcam_enum_framesizes(struct file *filp,
         return -EINVAL;
 
     if (!dev->conv_res_on) {
+        if (fsize->index > 0)
+            return -EINVAL;
+
+        fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
+        size_discrete = &fsize->discrete;
+        size_discrete->width = dev->input_format.width;
+        size_discrete->height = dev->input_format.height;
+    } else if (dev->conv_res_on) {
         if (fsize->index > 0)
             return -EINVAL;
 
