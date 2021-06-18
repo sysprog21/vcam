@@ -1,6 +1,7 @@
 #ifndef VCAM_DEVICE_H
 #define VCAM_DEVICE_H
 
+#include <linux/version.h>
 #include <media/v4l2-common.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-ioctl.h>
@@ -10,6 +11,12 @@
 
 #define PIXFMTS_MAX 4
 #define FB_NAME_MAXLENGTH 16
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 7, 0)
+#define VFL_TYPE_VIDEO VFL_TYPE_GRABBER
+#define HD_720_WIDTH 1280
+#define HD_720_HEIGHT 720
+#endif
 
 struct vcam_in_buffer {
     void *data;
