@@ -151,6 +151,7 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         f->fmt.pix.height = dev->output_format.height;
     }
 
+/*
     if (dev->conv_res_on) {
         int n_avail = ARRAY_SIZE(vcam_sizes);
         const struct v4l2_frmsize_discrete *sz = v4l2_find_nearest_size(
@@ -160,6 +161,7 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         f->fmt.pix.height = sz->height;
         vcam_update_format_cap(dev, false);
     }
+*/
 
     f->fmt.pix.field = V4L2_FIELD_NONE;
     if (f->fmt.pix.pixelformat == V4L2_PIX_FMT_YUYV) {
