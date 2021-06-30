@@ -153,9 +153,18 @@ static int vcam_try_fmt_vid_cap(struct file *file,
 
     if (dev->conv_res_on) {
         int n_avail = ARRAY_SIZE(vcam_sizes);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
         const struct v4l2_frmsize_discrete *sz = v4l2_find_nearest_size(
             vcam_sizes, n_avail, width, height, vcam_sizes[n_avail - 1].width,
             vcam_sizes[n_avail - 1].height);
+#else
+        const struct v4l2_discrete_probe vcam_probe = {
+            vcam_sizes, ARRAY_SIZE(vcam_sizes)};
+
+        const struct v4l2_frmsize_discrete *sz =
+            v4l2_find_nearest_format(&vcam_probe, vcam_sizes[n_avail - 1].width,
+                                     vcam_sizes[n_avail - 1].height);
+#endif
         f->fmt.pix.width = sz->width;
         f->fmt.pix.height = sz->height;
         vcam_update_format_cap(dev, false);
