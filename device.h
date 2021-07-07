@@ -82,9 +82,13 @@ struct vcam_device {
     struct v4l2_pix_format output_format;
     struct v4l2_pix_format input_format;
 
+    struct v4l2_pix_format crop_output_format;
+    struct v4l2_rect crop_cap;
+
     /* Conversion switches */
     bool conv_pixfmt_on;
     bool conv_res_on;
+    bool conv_crop_on;
 };
 
 struct vcam_device *create_vcam_device(size_t idx,
