@@ -175,6 +175,8 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         f->fmt.pix.height = sz->height;
         dev->output_format.width = sz->width;
         dev->output_format.height = sz->height;
+
+        /* set the output_format on YUYV or SRGB*/
         if (dev->output_format.pixelformat == V4L2_PIX_FMT_YUYV) {
             dev->output_format.bytesperline = dev->output_format.width << 1;
             dev->output_format.colorspace = V4L2_COLORSPACE_SMPTE170M;
@@ -188,6 +190,7 @@ static int vcam_try_fmt_vid_cap(struct file *file,
     }
 
     if (dev->conv_crop_on) {
+        /* set the rectangular size for the cropping */
         struct v4l2_rect *crop = &dev->crop_cap;
         struct v4l2_rect r = {0, 0, f->fmt.pix.width, f->fmt.pix.height};
         struct v4l2_rect min_r = {0, 0, r.width * 3 / 4, r.height * 3 / 4};
@@ -198,6 +201,8 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         dev->crop_output_format.width = crop->width;
         dev->crop_output_format.height = crop->height;
         pr_debug("Output crop is %d", dev->conv_crop_on);
+
+        /* set the cropping v4l2_format on YUYV or SRGB */
         f->fmt.pix.width = dev->crop_output_format.width;
         f->fmt.pix.height = dev->crop_output_format.height;
         f->fmt.pix.field = V4L2_FIELD_NONE;
@@ -920,7 +925,6 @@ input_buffer_failure:
 framebuffer_failure:
     destroy_framebuffer(vcam->vcam_fb_fname);
 video_regdev_failure:
-    /* TODO: vb2 deinit */
     video_unregister_device(&vcam->vdev);
     video_device_release(&vcam->vdev);
 vb2_out_init_failed:
