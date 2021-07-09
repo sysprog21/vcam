@@ -39,10 +39,10 @@ Expectedly, two device nodes will be created in `/dev`:
 * videoX - V4L2 device;
 * vcamctl - Control device for virtual camera(s), used by control utility `vcam-util`;
 
-In `/proc` directory, device file `fbX` will be created.
+In `/proc` directory, device file `vcamfbX` will be created.
 
 The device if initialy configured to process 640x480 RGB24 image format.
-By writing 640x480 RGB24 raw frame data to `/proc/fbX` file the resulting
+By writing 640x480 RGB24 raw frame data to `/proc/vcamfbX` file the resulting
 video stream will appear on corresponding `/dev/videoX` V4L2 device(s).
 
 Run `vcam-util --help` for more information about how to configure, add or
@@ -84,6 +84,13 @@ Driver Info:
 		Extended Pix Format
 		Device Capabilities
 ```
+
+Available parameters in the `module.c`:
+* `devices_max` - Maximal number of devices. The default is 8.
+* `create_devices` - Number of devices to be created during initialization. The default is 1.
+* `allow_pix_conversion` - Allow pixel format conversion from RGB24 to YUYV. The default is OFF.
+* `allow_scaling` - Allow image scaling from 480p to 720p. The default is OFF.
+* `allow_cropping` - Allow image cropping in Four-Thirds system. The default is OFF.
 
 ## Related Projects
 

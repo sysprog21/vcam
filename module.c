@@ -15,6 +15,7 @@ unsigned short devices_max = 8;
 unsigned short create_devices = 1;
 unsigned char allow_pix_conversion = 0;
 unsigned char allow_scaling = 0;
+unsigned char allow_cropping = 0;
 
 module_param(devices_max, ushort, 0);
 MODULE_PARM_DESC(devices_max, "Maximal number of devices\n");
@@ -29,6 +30,9 @@ MODULE_PARM_DESC(allow_pix_conversion,
 
 module_param(allow_scaling, byte, 0);
 MODULE_PARM_DESC(allow_scaling, "Allow image scaling by default\n");
+
+module_param(allow_cropping, byte, 0);
+MODULE_PARM_DESC(allow_cropping, "Allow image cropping by default\n");
 
 const char *vcam_dev_name = VCAM_DEV_NAME;
 
