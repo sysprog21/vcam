@@ -85,12 +85,17 @@ Driver Info:
 		Device Capabilities
 ```
 
-Available parameters in the `module.c`:
+Available parameters for `vcam` kernel module:
 * `devices_max` - Maximal number of devices. The default is 8.
 * `create_devices` - Number of devices to be created during initialization. The default is 1.
 * `allow_pix_conversion` - Allow pixel format conversion from RGB24 to YUYV. The default is OFF.
 * `allow_scaling` - Allow image scaling from 480p to 720p. The default is OFF.
 * `allow_cropping` - Allow image cropping in Four-Thirds system. The default is OFF.
+
+When you load a module using insmod command, you can supply the parameters as key=value pairs for example:
+```shell
+$ sudo insmod vcam.ko allow_pix_conversion=1
+```
 
 ## Related Projects
 
