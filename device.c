@@ -186,7 +186,9 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         }
         dev->output_format.sizeimage =
             dev->output_format.bytesperline * dev->output_format.height;
-        vcam_update_format_cap(dev, false);
+
+        /* resize the framebuffer */
+        vcam_update_vcamfb(dev);
     }
 
     if (dev->conv_crop_on) {
@@ -215,6 +217,10 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         }
         f->fmt.pix.sizeimage =
             f->fmt.pix.bytesperline * dev->output_format.height;
+
+        /* resize the framebuffer */
+        vcam_update_vcamfb(dev);
+
         return 0;
     }
 
@@ -825,7 +831,6 @@ struct vcam_device *create_vcam_device(size_t idx,
                                        struct vcam_device_spec *dev_spec)
 {
     struct video_device *vdev;
-    struct proc_dir_entry *pde;
     int i, ret = 0;
 
     struct vcam_device *vcam =
@@ -877,15 +882,6 @@ struct vcam_device *create_vcam_device(size_t idx,
         goto video_regdev_failure;
     }
 
-    /* Initialize framebuffer device */
-    snprintf(vcam->vcam_fb_fname, sizeof(vcam->vcam_fb_fname), "vcamfb%d",
-             MINOR(vcam->vdev.dev.devt));
-    pde = init_framebuffer((const char *) vcam->vcam_fb_fname, vcam);
-    if (!pde)
-        goto framebuffer_failure;
-    vcam->vcam_fb_procf = pde;
-    vcam->fb_isopen = 0;
-
     /* Setup conversion capabilities */
     vcam->conv_res_on = (bool) allow_scaling;
     vcam->conv_pixfmt_on = (bool) allow_pix_conversion;
@@ -909,21 +905,22 @@ struct vcam_device *create_vcam_device(size_t idx,
 
     vcam->sub_thr_id = NULL;
 
-    /* Initialize input */
-    ret = vcam_in_queue_setup(&vcam->in_queue, vcam->input_format.sizeimage);
-    if (ret) {
-        pr_err("Failed to initialize input buffer\n");
-        goto input_buffer_failure;
+    /* Initialize framebuffer */
+    ret = init_vcamfb(vcam);
+    if (ret < 0) {
+        pr_err("Failed to initialize vcamfb\n");
+        goto vcamfb_failure;
     }
+    vcam->fb_isopen = 0;
 
     vcam->output_fps.numerator = 1001;
     vcam->output_fps.denominator = 30000;
 
     return vcam;
 
-input_buffer_failure:
-framebuffer_failure:
-    destroy_framebuffer(vcam->vcam_fb_fname);
+vcamfb_failure:
+    destroy_vcamfb(vcam);
+    vfree(vcam->fb_priv);
 video_regdev_failure:
     video_unregister_device(&vcam->vdev);
     video_device_release(&vcam->vdev);
@@ -942,8 +939,8 @@ void destroy_vcam_device(struct vcam_device *vcam)
 
     if (vcam->sub_thr_id)
         kthread_stop(vcam->sub_thr_id);
-    vcam_in_queue_destroy(&vcam->in_queue);
-    destroy_framebuffer(vcam->vcam_fb_fname);
+    destroy_vcamfb(vcam);
+    vfree(vcam->fb_priv);
     mutex_destroy(&vcam->vcam_mutex);
     video_unregister_device(&vcam->vdev);
     v4l2_device_unregister(&vcam->v4l2_dev);
