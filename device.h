@@ -72,7 +72,7 @@ struct vcam_device {
     struct proc_dir_entry *vcam_fb_procf;
     struct mutex vcam_mutex;
 
-    /* framebuffer vcamfb_info  */
+    /* framebuffer private data */
     void *fb_priv;
 
     /* Submitter thread */

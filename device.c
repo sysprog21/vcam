@@ -920,7 +920,6 @@ struct vcam_device *create_vcam_device(size_t idx,
 
 vcamfb_failure:
     vcamfb_destroy(vcam);
-    vfree(vcam->fb_priv);
 video_regdev_failure:
     video_unregister_device(&vcam->vdev);
     video_device_release(&vcam->vdev);
@@ -940,7 +939,6 @@ void destroy_vcam_device(struct vcam_device *vcam)
     if (vcam->sub_thr_id)
         kthread_stop(vcam->sub_thr_id);
     vcamfb_destroy(vcam);
-    vfree(vcam->fb_priv);
     mutex_destroy(&vcam->vcam_mutex);
     video_unregister_device(&vcam->vdev);
     v4l2_device_unregister(&vcam->v4l2_dev);

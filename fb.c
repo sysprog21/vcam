@@ -477,6 +477,7 @@ void vcamfb_destroy(struct vcam_device *dev)
         unregister_framebuffer(info);
         vfree(fb_data->addr);
         fb_dealloc_cmap(&info->cmap);
+        vfree(dev->fb_priv);
     }
 }
 
