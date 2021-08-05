@@ -65,7 +65,7 @@ static ssize_t control_write(struct file *file,
 static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *dev;
-    struct vcamfb_info *fb_data;
+
     if (ctldev->vcam_device_count <= dev_spec->idx)
         return -EINVAL;
 
@@ -76,8 +76,8 @@ static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
         dev_spec->pix_fmt = VCAM_PIXFMT_YUYV;
     else
         dev_spec->pix_fmt = VCAM_PIXFMT_RGB24;
-    fb_data = dev->fb_priv;
-    strncpy((char *) &dev_spec->fb_node, (const char *) &fb_data->fb_name,
+
+    strncpy((char *) &dev_spec->fb_node, (const char *) get_vcamfb_name(dev),
             sizeof(dev_spec->fb_node));
     snprintf((char *) &dev_spec->video_node, sizeof(dev_spec->video_node),
              "/dev/video%d", dev->vdev.minor);

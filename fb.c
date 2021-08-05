@@ -8,6 +8,13 @@
 #include "fb.h"
 #include "videobuf.h"
 
+struct vcamfb_info {
+    struct fb_info info;
+    void *addr;
+    unsigned int offset;
+    char name[FB_NAME_MAXLENGTH];
+};
+
 static int vcamfb_open(struct inode *ind, struct file *file)
 {
     unsigned long flags = 0;
@@ -452,7 +459,7 @@ int init_vcamfb(struct vcam_device *dev)
     if (ret < 0)
         goto fb_alloc_failure;
 
-    snprintf(fb_data->fb_name, sizeof(fb_data->fb_name), "fb%d",
+    snprintf(fb_data->name, sizeof(fb_data->name), "fb%d",
              MINOR(info->dev->devt));
 
     return 0;
@@ -473,7 +480,7 @@ void destroy_vcamfb(struct vcam_device *dev)
     }
 }
 
-void vcam_update_vcamfb(struct vcam_device *dev)
+void update_vcamfb_format(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data = (struct vcamfb_info *) dev->fb_priv;
     struct fb_info *info = &fb_data->info;
@@ -520,4 +527,11 @@ void vcam_update_vcamfb(struct vcam_device *dev)
     info->var.xres_virtual = dev->input_format.width;
     info->var.yres_virtual = dev->input_format.height;
     info->fix.line_length = dev->input_format.bytesperline;
+}
+
+char *get_vcamfb_name(struct vcam_device *dev)
+{
+    struct vcamfb_info *fb_data;
+    fb_data = dev->fb_priv;
+    return fb_data->name;
 }

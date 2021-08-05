@@ -188,7 +188,7 @@ static int vcam_try_fmt_vid_cap(struct file *file,
             dev->output_format.bytesperline * dev->output_format.height;
 
         /* resize the framebuffer */
-        vcam_update_vcamfb(dev);
+        update_vcamfb_format(dev);
     }
 
     if (dev->conv_crop_on) {
@@ -219,7 +219,7 @@ static int vcam_try_fmt_vid_cap(struct file *file,
             f->fmt.pix.bytesperline * dev->output_format.height;
 
         /* resize the framebuffer */
-        vcam_update_vcamfb(dev);
+        update_vcamfb_format(dev);
 
         return 0;
     }
