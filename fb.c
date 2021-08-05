@@ -405,7 +405,7 @@ static struct fb_var_screeninfo vfb_default = {
     .vmode = FB_VMODE_NONINTERLACED,
 };
 
-int init_vcamfb(struct vcam_device *dev)
+int vcamfb_init(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data;
     struct vcam_in_queue *q = &dev->in_queue;
@@ -469,7 +469,7 @@ fb_alloc_failure:
     return -EINVAL;
 }
 
-void destroy_vcamfb(struct vcam_device *dev)
+void vcamfb_destroy(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data = (struct vcamfb_info *) dev->fb_priv;
     struct fb_info *info = &fb_data->info;
@@ -480,7 +480,7 @@ void destroy_vcamfb(struct vcam_device *dev)
     }
 }
 
-void update_vcamfb_format(struct vcam_device *dev)
+void vcamfb_update(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data = (struct vcamfb_info *) dev->fb_priv;
     struct fb_info *info = &fb_data->info;
@@ -529,7 +529,7 @@ void update_vcamfb_format(struct vcam_device *dev)
     info->fix.line_length = dev->input_format.bytesperline;
 }
 
-char *get_vcamfb_name(struct vcam_device *dev)
+char *vcamfb_get_devname(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data;
     fb_data = dev->fb_priv;

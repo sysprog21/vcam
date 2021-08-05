@@ -188,7 +188,7 @@ static int vcam_try_fmt_vid_cap(struct file *file,
             dev->output_format.bytesperline * dev->output_format.height;
 
         /* resize the framebuffer */
-        update_vcamfb_format(dev);
+        vcamfb_update(dev);
     }
 
     if (dev->conv_crop_on) {
@@ -219,7 +219,7 @@ static int vcam_try_fmt_vid_cap(struct file *file,
             f->fmt.pix.bytesperline * dev->output_format.height;
 
         /* resize the framebuffer */
-        update_vcamfb_format(dev);
+        vcamfb_update(dev);
 
         return 0;
     }
@@ -906,7 +906,7 @@ struct vcam_device *create_vcam_device(size_t idx,
     vcam->sub_thr_id = NULL;
 
     /* Initialize framebuffer */
-    ret = init_vcamfb(vcam);
+    ret = vcamfb_init(vcam);
     if (ret < 0) {
         pr_err("Failed to initialize vcamfb\n");
         goto vcamfb_failure;
@@ -919,7 +919,7 @@ struct vcam_device *create_vcam_device(size_t idx,
     return vcam;
 
 vcamfb_failure:
-    destroy_vcamfb(vcam);
+    vcamfb_destroy(vcam);
     vfree(vcam->fb_priv);
 video_regdev_failure:
     video_unregister_device(&vcam->vdev);
@@ -939,7 +939,7 @@ void destroy_vcam_device(struct vcam_device *vcam)
 
     if (vcam->sub_thr_id)
         kthread_stop(vcam->sub_thr_id);
-    destroy_vcamfb(vcam);
+    vcamfb_destroy(vcam);
     vfree(vcam->fb_priv);
     mutex_destroy(&vcam->vcam_mutex);
     video_unregister_device(&vcam->vdev);
