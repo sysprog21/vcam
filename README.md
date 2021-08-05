@@ -35,14 +35,15 @@ The module can be loaded to Linux kernel by runnning the command:
 $ sudo insmod vcam.ko
 ```
 
-Expectedly, two device nodes will be created in `/dev`:
+Expectedly, three device nodes will be created in `/dev`:
 * videoX - V4L2 device;
 * vcamctl - Control device for virtual camera(s), used by control utility `vcam-util`;
+* fbX - controlling framebuffer device;
 
-In `/proc` directory, device file `vcamfbX` will be created.
+In `/dev` directory, device file `fbX` will be created.
 
 The device if initialy configured to process 640x480 RGB24 image format.
-By writing 640x480 RGB24 raw frame data to `/proc/vcamfbX` file the resulting
+By writing 640x480 RGB24 raw frame data to `/dev/fbX` file the resulting
 video stream will appear on corresponding `/dev/videoX` V4L2 device(s).
 
 Run `vcam-util --help` for more information about how to configure, add or
@@ -55,7 +56,7 @@ $ sudo ./vcam-util -l
 You should get:
 ```
 Available virtual V4L2 compatible devices:
-1. vcamfb0(640,480,rgb24) -> /dev/video0
+1. fbX(640,480,rgb24) -> /dev/video0
 ```
 
 You can use this command to check if the driver is ok:
@@ -83,6 +84,26 @@ Driver Info:
 		Streaming
 		Extended Pix Format
 		Device Capabilities
+```
+You can check framebuffer format with this command:
+```shell
+$ sudo fbset -fb /dev/fbX --info
+```
+
+You will get information as following:
+```shell
+mode "640x480"
+    geometry 640 480 640 480 24
+    timings 0 0 0 0 0 0 0
+    rgba 8/0,8/8,8/16,0/0
+endmode
+
+Frame buffer device information:
+    Name        : vcamfb
+    Address     : 0xffffa293438ed000
+    Size        : 921600
+    Type        : PACKED PIXELS
+    Visual      : TRUECOLOR
 ```
 
 Available parameters for `vcam` kernel module:

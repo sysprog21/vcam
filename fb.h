@@ -3,8 +3,12 @@
 
 #include "device.h"
 
-struct proc_dir_entry *init_framebuffer(const char *proc_fname,
-                                        struct vcam_device *dev);
-void destroy_framebuffer(const char *proc_fname);
+int vcamfb_init(struct vcam_device *dev);
+
+void vcamfb_destroy(struct vcam_device *dev);
+
+void vcamfb_update(struct vcam_device *dev);
+
+char *vcamfb_get_devname(struct vcam_device *dev);
 
 #endif

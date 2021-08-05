@@ -9,6 +9,7 @@
 
 #include "control.h"
 #include "device.h"
+#include "fb.h"
 #include "videobuf.h"
 
 extern unsigned short devices_max;
@@ -64,6 +65,7 @@ static ssize_t control_write(struct file *file,
 static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *dev;
+
     if (ctldev->vcam_device_count <= dev_spec->idx)
         return -EINVAL;
 
@@ -74,7 +76,8 @@ static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
         dev_spec->pix_fmt = VCAM_PIXFMT_YUYV;
     else
         dev_spec->pix_fmt = VCAM_PIXFMT_RGB24;
-    strncpy((char *) &dev_spec->fb_node, (const char *) &dev->vcam_fb_fname,
+
+    strncpy((char *) &dev_spec->fb_node, (const char *) vcamfb_get_devname(dev),
             sizeof(dev_spec->fb_node));
     snprintf((char *) &dev_spec->video_node, sizeof(dev_spec->video_node),
              "/dev/video%d", dev->vdev.minor);
