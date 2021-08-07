@@ -27,7 +27,7 @@ After running `make`, you should be able to generate the following files:
 
 Before loading this kernel module, you have to satisfy its dependency:
 ```shell
-$ sudo modprobe videobuf2_vmalloc videobuf2_v4l2
+$ sudo modprobe -a videobuf2_vmalloc videobuf2_v4l2
 ```
 
 The module can be loaded to Linux kernel by runnning the command:
