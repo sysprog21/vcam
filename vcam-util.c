@@ -10,14 +10,14 @@
 
 #include "vcam.h"
 
-static const char *short_options = "hcm:r:ls:p:d:";
+static const char *short_options = "hcm:r:ls:p:d:f";
 
 const struct option long_options[] = {
     {"help", 0, NULL, 'h'},   {"create", 0, NULL, 'c'},
     {"modify", 1, NULL, 'm'}, {"list", 0, NULL, 'l'},
     {"size", 1, NULL, 's'},   {"pixfmt", 1, NULL, 'p'},
     {"device", 1, NULL, 'd'}, {"remove", 1, NULL, 'r'},
-    {NULL, 0, NULL, 0}};
+    {"fbdev", 0, NULL, 'f'},  {NULL, 0, NULL, 0}};
 
 const char *help =
     " -h --help                    print this informations\n"
@@ -27,7 +27,8 @@ const char *help =
     " -l --list                    list devices\n"
     " -s --size    WIDTHxHEIGHT    specify resolution\n"
     " -p --pixfmt  pix_fmt         pixel format (rgb24,yuv)\n"
-    " -d --device  /dev/*          control device node\n";
+    " -d --device  /dev/*          control device node\n"
+    " -f --fbdev                   list framebuffer device\n";
 
 enum ACTION { ACTION_NONE, ACTION_CREATE, ACTION_DESTROY, ACTION_MODIFY };
 
@@ -154,6 +155,27 @@ int list_devices()
     return 0;
 }
 
+int list_fb()
+{
+    struct vcam_device_spec dev = {.idx = 0};
+    int fd = open(ctl_path, O_RDWR);
+    if (fd == -1) {
+        fprintf(stderr, "Failed to open %s device\n", ctl_path);
+        return -1;
+    }
+    printf("Available framebuffer device information:\n");
+    while (!ioctl(fd, VCAM_IOCTL_GET_FB, &dev)) {
+        dev.idx++;
+        printf(
+            "%d. %s(%d/%d/%d/%d)\nSize        :%d\nAddress     :%p\nLineLength "
+            " :%d\n",
+            dev.idx, dev.fb_id, dev.width, dev.height, dev.virt_width,
+            dev.virt_height, dev.mem_len, dev.address, dev.perline);
+    }
+    close(fd);
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int next_option;
@@ -206,6 +228,9 @@ int main(int argc, char *argv[])
         case 'd':
             printf("Using device %s\n", optarg);
             strncpy(ctl_path, optarg, sizeof(ctl_path) - 1);
+            break;
+        case 'f':
+            list_fb();
             break;
         }
     } while (next_option != -1);

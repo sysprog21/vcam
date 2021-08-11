@@ -536,3 +536,18 @@ char *vcamfb_get_devname(struct vcam_device *dev)
     fb_data = dev->fb_priv;
     return fb_data->name;
 }
+
+int vcamfb_get_info(struct vcam_device *dev, struct vcam_device_spec *dev_spec)
+{
+    struct vcamfb_info *fb_data = (struct vcamfb_info *) dev->fb_priv;
+    struct fb_info *info = &fb_data->info;
+    dev_spec->width = info->var.xres;
+    dev_spec->height = info->var.yres;
+    dev_spec->virt_width = info->var.xres_virtual;
+    dev_spec->virt_height = info->var.yres_virtual;
+    dev_spec->address = fb_data->addr;
+    dev_spec->mem_len = info->fix.smem_len;
+    dev_spec->perline = info->fix.line_length;
+    strncpy(dev_spec->fb_id, info->fix.id, sizeof(dev_spec->fb_id));
+    return 0;
+}

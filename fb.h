@@ -11,4 +11,6 @@ void vcamfb_update(struct vcam_device *dev);
 
 char *vcamfb_get_devname(struct vcam_device *dev);
 
+int vcamfb_get_info(struct vcam_device *dev, struct vcam_device_spec *dev_spec);
+
 #endif

@@ -84,6 +84,19 @@ static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
     return 0;
 }
 
+static int control_iocontrol_get_fb(struct vcam_device_spec *dev_spec)
+{
+    struct vcam_device *dev;
+    int ret;
+
+    if (ctldev->vcam_device_count <= dev_spec->idx)
+        return -EINVAL;
+
+    dev = ctldev->vcam_devices[dev_spec->idx];
+    ret = vcamfb_get_info(dev, dev_spec);
+    return 0;
+}
+
 static int control_iocontrol_modify_input_setting(
     struct vcam_device_spec *dev_spec)
 {
@@ -202,6 +215,17 @@ static long control_ioctl(struct file *file,
     case VCAM_IOCTL_MODIFY_SETTING:
         pr_debug("Modify setting(%d)\n", dev_spec.idx);
         ret = control_iocontrol_modify_input_setting(&dev_spec);
+        break;
+    case VCAM_IOCTL_GET_FB:
+        pr_debug("Get device(%d)\n", dev_spec.idx);
+        ret = control_iocontrol_get_fb(&dev_spec);
+        if (!ret) {
+            if (copy_to_user((void *__user *) iocontrol_param, &dev_spec,
+                             sizeof(struct vcam_device_spec)) != 0) {
+                pr_warn("Failed to copy_to_user!");
+                ret = -1;
+            }
+        }
         break;
     default:
         ret = -1;
