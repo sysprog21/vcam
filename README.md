@@ -58,6 +58,19 @@ You should get:
 Available virtual V4L2 compatible devices:
 1. fbX(640,480,rgb24) -> /dev/video0
 ```
+Another e.g. list all available framebuffer device(s) information:
+```shell
+$ sudo ./vcam-util -f
+```
+
+You should get:
+```
+Available framebuffer device information:
+1. vcamfb(640/480/640/480)
+Size        :921600
+Address     :0xffffb1ab03d1d000
+LineLength  :1920
+```
 
 You can use this command to check if the driver is ok:
 ```shell
@@ -91,7 +104,7 @@ $ sudo fbset -fb /dev/fbX --info
 ```
 
 You will get information as following:
-```shell
+```
 mode "640x480"
     geometry 640 480 640 480 24
     timings 0 0 0 0 0 0 0
