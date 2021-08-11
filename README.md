@@ -67,9 +67,9 @@ You should get:
 ```
 Available framebuffer device information:
 1. vcamfb(640/480/640/480)
-Size        :921600
-Address     :0xffffb1ab03d1d000
-LineLength  :1920
+Size        : 921600
+Address     : 0xffffb1ab03aad000
+LineLength  : 1920
 ```
 
 You can use this command to check if the driver is ok:

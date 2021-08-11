@@ -167,8 +167,10 @@ int list_fb()
     while (!ioctl(fd, VCAM_IOCTL_GET_FB, &dev)) {
         dev.idx++;
         printf(
-            "%d. %s(%d/%d/%d/%d)\nSize        :%d\nAddress     :%p\nLineLength "
-            " :%d\n",
+            "%d. %s(%d/%d/%d/%d)\n"
+            "Size        : %d\n"
+            "Address     : %p\n"
+            "LineLength  : %d\n",
             dev.idx, dev.fb_id, dev.width, dev.height, dev.virt_width,
             dev.virt_height, dev.mem_len, dev.address, dev.perline);
     }
