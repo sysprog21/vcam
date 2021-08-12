@@ -109,7 +109,8 @@ static void vcam_out_buffer_queue(struct vb2_buffer *vb)
 {
     unsigned long flags = 0;
     struct vcam_device *dev = vb2_get_drv_priv(vb->vb2_queue);
-    struct vcam_out_buffer *buf = container_of(vb, struct vcam_out_buffer, vb);
+    struct vb2_v4l2_buffer *vb2 = to_vb2_v4l2_buffer(vb);
+    struct vcam_out_buffer *buf = container_of(vb2, struct vcam_out_buffer, vb);
     struct vcam_out_queue *q = &dev->vcam_out_vidq;
     buf->filled = 0;
 
@@ -151,7 +152,7 @@ static void vcam_stop_streaming(struct vb2_queue *vb2_q)
         struct vcam_out_buffer *buf =
             list_entry(q->active.next, struct vcam_out_buffer, list);
         list_del(&buf->list);
-        vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+        vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_ERROR);
         pr_debug("Throwing out buffer\n");
     }
     spin_unlock_irqrestore(&dev->out_q_slock, flags);

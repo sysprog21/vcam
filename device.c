@@ -510,7 +510,7 @@ static void submit_noinput_buffer(struct vcam_out_buffer *buf,
     int i, j;
     int32_t yuyv_tmp;
     unsigned char *yuyv_helper = (unsigned char *) &yuyv_tmp;
-    void *vbuf_ptr = vb2_plane_vaddr(&buf->vb, 0);
+    void *vbuf_ptr = vb2_plane_vaddr(&buf->vb.vb2_buf, 0);
     int32_t *yuyv_ptr = vbuf_ptr;
     size_t size = dev->output_format.sizeimage;
     size_t rowsize = dev->output_format.bytesperline;
@@ -544,8 +544,8 @@ static void submit_noinput_buffer(struct vcam_out_buffer *buf,
             memset(vbuf_ptr, 0xff, rowsize * (rows % 255));
     }
 
-    buf->vb.timestamp = ktime_get_ns();
-    vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
+    buf->vb.vb2_buf.timestamp = ktime_get_ns();
+    vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_DONE);
 }
 
 static void copy_scale(unsigned char *dst,
@@ -681,7 +681,7 @@ static void submit_copy_buffer(struct vcam_out_buffer *out_buf,
         pr_err("Input buffer is NULL in ready state\n");
         return;
     }
-    out_vbuf_ptr = vb2_plane_vaddr(&out_buf->vb, 0);
+    out_vbuf_ptr = vb2_plane_vaddr(&out_buf->vb.vb2_buf, 0);
     if (!out_vbuf_ptr) {
         pr_err("Output buffer is NULL\n");
         return;
@@ -724,8 +724,8 @@ static void submit_copy_buffer(struct vcam_out_buffer *out_buf,
             }
         }
     }
-    out_buf->vb.timestamp = ktime_get_ns();
-    vb2_buffer_done(&out_buf->vb, VB2_BUF_STATE_DONE);
+    out_buf->vb.vb2_buf.timestamp = ktime_get_ns();
+    vb2_buffer_done(&out_buf->vb.vb2_buf, VB2_BUF_STATE_DONE);
 }
 
 int submitter_thread(void *data)
