@@ -6,6 +6,7 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-ioctl.h>
 #include <media/videobuf2-core.h>
+#include <media/videobuf2-v4l2.h>
 
 #include "vcam.h"
 
@@ -32,7 +33,7 @@ struct vcam_in_queue {
 };
 
 struct vcam_out_buffer {
-    struct vb2_buffer vb;
+    struct vb2_v4l2_buffer vb;
     struct list_head list;
     size_t filled;
 };
