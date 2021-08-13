@@ -374,7 +374,7 @@ static int vcam_fb_setcolreg(u_int regno,
     return 0;
 }
 
-static const struct fb_ops vcamfb_ops = {
+static struct fb_ops vcamfb_ops = {
     .fb_open = vcam_fb_open,
     .fb_release = vcam_fb_release,
     .fb_write = vcam_fb_write,
