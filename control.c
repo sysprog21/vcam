@@ -77,7 +77,7 @@ static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
     else
         dev_spec->pix_fmt = VCAM_PIXFMT_RGB24;
 
-    strncpy((char *) &dev_spec->fb_node, (const char *) vcamfb_get_devname(dev),
+    strncpy((char *) &dev_spec->fb_node, (const char *) vcamfb_get_devnode(dev),
             sizeof(dev_spec->fb_node));
     snprintf((char *) &dev_spec->video_node, sizeof(dev_spec->video_node),
              "/dev/video%d", dev->vdev.minor);

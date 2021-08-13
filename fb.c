@@ -530,7 +530,7 @@ void vcamfb_update(struct vcam_device *dev)
     info->fix.line_length = dev->input_format.bytesperline;
 }
 
-char *vcamfb_get_devname(struct vcam_device *dev)
+char *vcamfb_get_devnode(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data;
     fb_data = dev->fb_priv;
