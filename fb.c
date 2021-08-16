@@ -375,6 +375,7 @@ static int vcam_fb_setcolreg(u_int regno,
 }
 
 static struct fb_ops vcamfb_ops = {
+    .owner = THIS_MODULE,
     .fb_open = vcam_fb_open,
     .fb_release = vcam_fb_release,
     .fb_write = vcam_fb_write,
@@ -450,10 +451,19 @@ int vcamfb_init(struct vcam_device *dev)
     info->par = dev;
     info->pseudo_palette = NULL;
     info->flags = FBINFO_FLAG_DEFAULT;
+    info->device = &dev->vdev.dev;
+    INIT_LIST_HEAD(&info->modelist);
 
-    ret = fb_alloc_cmap(&info->cmap, 256, 0);
-    if (ret < 0)
-        return -EINVAL;
+    /* set the fb_cmap */
+    info->cmap.red = NULL;
+    info->cmap.green = NULL;
+    info->cmap.blue = NULL;
+    info->cmap.transp = NULL;
+
+    if (fb_alloc_cmap(&info->cmap, 256, 0)) {
+        pr_err("Failed to allocate cmap!");
+        return -ENOMEM;
+    }
 
     ret = register_framebuffer(info);
     if (ret < 0)
