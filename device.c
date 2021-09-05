@@ -299,7 +299,7 @@ static int vcam_enum_frameintervals(struct file *file,
     frm_step->min.numerator = 1001;
     frm_step->min.denominator = 60000;
     frm_step->max.numerator = 1001;
-    frm_step->max.denominator = 1;
+    frm_step->max.denominator = 1001;
     frm_step->step.numerator = 1001;
     frm_step->step.denominator = 60000;
 
