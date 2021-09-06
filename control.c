@@ -44,7 +44,7 @@ static ssize_t control_read(struct file *file,
 {
     int len;
     static const char *str = "Virtual V4L2 compatible camera device\n";
-    pr_debug("read %ld %dB\n", (long) buffer, (int) length);
+    pr_debug("read %ld %dB\n", (long __force) buffer, (int) length);
     len = strlen(str);
     if (len < length)
         len = length;
@@ -58,7 +58,7 @@ static ssize_t control_write(struct file *file,
                              size_t length,
                              loff_t *offset)
 {
-    pr_debug("write %ld %dB\n", (long) buffer, (int) length);
+    pr_debug("write %ld %dB\n", (long __force) buffer, (int) length);
     return length;
 }
 
