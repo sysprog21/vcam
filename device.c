@@ -341,6 +341,7 @@ static int vcam_s_parm(struct file *file,
     cp = &sp->parm.capture;
     dev = (struct vcam_device *) video_drvdata(file);
 
+    cp->capability = V4L2_CAP_TIMEPERFRAME;
     if (!cp->timeperframe.numerator || !cp->timeperframe.denominator)
         cp->timeperframe = dev->output_fps;
     else
@@ -404,8 +405,8 @@ static const struct v4l2_ioctl_ops vcam_ioctl_ops = {
     .vidioc_g_fmt_vid_cap = vcam_g_fmt_vid_cap,
     .vidioc_try_fmt_vid_cap = vcam_try_fmt_vid_cap,
     .vidioc_s_fmt_vid_cap = vcam_s_fmt_vid_cap,
-    .vidioc_s_parm = vcam_g_parm,
-    .vidioc_g_parm = vcam_s_parm,
+    .vidioc_g_parm = vcam_g_parm,
+    .vidioc_s_parm = vcam_s_parm,
     .vidioc_enum_frameintervals = vcam_enum_frameintervals,
     .vidioc_enum_framesizes = vcam_enum_framesizes,
     .vidioc_reqbufs = vb2_ioctl_reqbufs,
