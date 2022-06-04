@@ -26,7 +26,7 @@ const char *help =
     " -r --remove  idx             remove device\n"
     " -l --list                    list devices\n"
     " -s --size    WIDTHxHEIGHT    specify resolution\n"
-    " -p --pixfmt  pix_fmt         pixel format (rgb24,yuv)\n"
+    " -p --pixfmt  pix_fmt         pixel format (rgb24,yuyv)\n"
     " -d --device  /dev/*          control device node\n";
 
 enum ACTION { ACTION_NONE, ACTION_CREATE, ACTION_DESTROY, ACTION_MODIFY };
@@ -58,7 +58,7 @@ int determine_pixfmt(char *pixfmt_str)
 {
     if (!strncmp(pixfmt_str, "rgb24", 5))
         return VCAM_PIXFMT_RGB24;
-    if (!strncmp(pixfmt_str, "yuyv", 3))
+    if (!strncmp(pixfmt_str, "yuyv", 4))
         return VCAM_PIXFMT_YUYV;
     return -1;
 }
