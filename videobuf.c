@@ -83,6 +83,12 @@ static int vcam_out_queue_setup(struct vb2_queue *vq,
     if (*nbuffers < 2)
         *nbuffers = 2;
 
+    if (*nplanes > 0) {
+        if (sizes[0] < size)
+            return -EINVAL;
+        return 0;
+    }
+
     *nplanes = 1;
 
     sizes[0] = size;
