@@ -64,7 +64,7 @@ You can use this command to check if the driver is ok:
 $ sudo v4l2-compliance -d /dev/videoX -f
 ```
 
-It will return a bunch of test lines, with 1 failed and 0 warnings at the end.
+It will return a bunch of test lines, with 0 failed and 0 warnings at the end.
 
 You can check if all configured formats and emulated controls are ok with this command:
 ```shell

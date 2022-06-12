@@ -438,10 +438,17 @@ int vcamfb_init(struct vcam_device *dev)
     vfb_fix.line_length = dev->input_format.bytesperline;
 
     /* set the fb_var */
-    vfb_default.xres = dev->input_format.width;
-    vfb_default.yres = dev->input_format.height;
+    if (dev->conv_crop_on) {
+        vfb_default.xres = dev->crop_output_format.width;
+        vfb_default.yres = dev->crop_output_format.height;
+    } else {
+        vfb_default.xres = dev->input_format.width;
+        vfb_default.yres = dev->input_format.height;
+    }
     vfb_default.bits_per_pixel = 24;
     vcam_fb_check_var(&vfb_default, info);
+    vfb_default.xres_virtual = dev->input_format.width;
+    vfb_default.yres_virtual = dev->input_format.height;
 
     /* set the fb_info */
     info->screen_base = (char __iomem *) fb_data->addr;
