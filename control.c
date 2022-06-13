@@ -240,7 +240,7 @@ int request_vcam_device(struct vcam_device_spec *dev_spec)
     idx = ctldev->vcam_device_count++;
     ctldev->vcam_devices[idx] = vcam;
     spin_unlock_irqrestore(&ctldev->vcam_devices_lock, flags);
-    return idx;
+    return 0;
 }
 
 static struct control_device *alloc_control_device(void)

@@ -20,14 +20,14 @@ const struct option long_options[] = {
     {NULL, 0, NULL, 0}};
 
 const char *help =
-    " -h --help                    print this informations\n"
-    " -c --create                  create new device\n"
-    " -m --modify  idx             modify device\n"
-    " -r --remove  idx             remove device\n"
-    " -l --list                    list devices\n"
-    " -s --size    WIDTHxHEIGHT    specify resolution\n"
-    " -p --pixfmt  pix_fmt         pixel format (rgb24,yuyv)\n"
-    " -d --device  /dev/*          control device node\n";
+    " -h --help                    Print this informations.\n"
+    " -c --create                  Create a new device.\n"
+    " -m --modify  idx             Modify a device.\n"
+    " -r --remove  idx             Remove a device.\n"
+    " -l --list                    List devices.\n"
+    " -s --size    WIDTHxHEIGHT    Specify resolution.\n"
+    " -p --pixfmt  pix_fmt         Specify pixel format (rgb24,yuyv).\n"
+    " -d --device  /dev/*          Control device node.\n";
 
 enum ACTION { ACTION_NONE, ACTION_CREATE, ACTION_DESTROY, ACTION_MODIFY };
 
@@ -67,7 +67,7 @@ int create_device(struct vcam_device_spec *dev)
 {
     int fd = open(ctl_path, O_RDWR);
     if (fd == -1) {
-        fprintf(stderr, "Failed to open %s device\n", ctl_path);
+        fprintf(stderr, "Failed to open %s device.\n", ctl_path);
         return -1;
     }
 
@@ -80,6 +80,9 @@ int create_device(struct vcam_device_spec *dev)
         dev->pix_fmt = device_template.pix_fmt;
 
     int res = ioctl(fd, VCAM_IOCTL_CREATE_DEVICE, dev);
+    if (res) {
+        fprintf(stderr, "Failed to create a new device.\n");
+    }
 
     close(fd);
     return res;
@@ -89,17 +92,17 @@ int remove_device(struct vcam_device_spec *dev)
 {
     int fd = open(ctl_path, O_RDWR);
     if (fd == -1) {
-        fprintf(stderr, "Failed to open %s device\n", ctl_path);
+        fprintf(stderr, "Failed to open %s device.\n", ctl_path);
         return -1;
     }
 
-    if (ioctl(fd, VCAM_IOCTL_DESTROY_DEVICE, dev)) {
-        fprintf(stderr, "Can't remove device with index %d\n", dev->idx + 1);
-        return -1;
+    int res = ioctl(fd, VCAM_IOCTL_DESTROY_DEVICE, dev);
+    if (res) {
+        fprintf(stderr, "Failed to remove the device on index %d.\n", dev->idx + 1);
     }
+
     close(fd);
-    printf("Device removed\n");
-    return 0;
+    return res;
 }
 
 int modify_device(struct vcam_device_spec *dev)
@@ -108,12 +111,13 @@ int modify_device(struct vcam_device_spec *dev)
 
     int fd = open(ctl_path, O_RDWR);
     if (fd == -1) {
-        fprintf(stderr, "Failed to open %s device\n", ctl_path);
+        fprintf(stderr, "Failed to open %s device.\n", ctl_path);
         return -1;
     }
 
     if (ioctl(fd, VCAM_IOCTL_GET_DEVICE, &orig_dev)) {
-        fprintf(stderr, "No device with index %d\n", orig_dev.idx + 1);
+        fprintf(stderr, "Failed to find device on index %d.\n", orig_dev.idx + 1);
+        close(fd);
         return -1;
     }
 
@@ -126,10 +130,11 @@ int modify_device(struct vcam_device_spec *dev)
         dev->pix_fmt = orig_dev.pix_fmt;
 
     int res = ioctl(fd, VCAM_IOCTL_MODIFY_SETTING, dev);
-    printf("Setting modified\n");
+    if (res) {
+        fprintf(stderr, "Failed to modify the device.\n");
+    }
 
     close(fd);
-
     return res;
 }
 
@@ -139,7 +144,7 @@ int list_devices()
 
     int fd = open(ctl_path, O_RDWR);
     if (fd == -1) {
-        fprintf(stderr, "Failed to open %s device\n", ctl_path);
+        fprintf(stderr, "Failed to open %s device.\n", ctl_path);
         return -1;
     }
 
@@ -174,7 +179,7 @@ int main(int argc, char *argv[])
             exit(0);
         case 'c':
             current_action = ACTION_CREATE;
-            printf("A new device will be created\n");
+            printf("Creating a new device.\n");
             break;
         case 'm':
             current_action = ACTION_MODIFY;
@@ -183,28 +188,29 @@ int main(int argc, char *argv[])
         case 'r':
             current_action = ACTION_DESTROY;
             dev.idx = atoi(optarg) - 1;
+            printf("Removing the device.\n");
             break;
         case 'l':
             list_devices();
             break;
         case 's':
             if (!parse_resolution(optarg, &dev)) {
-                printf("Failed to parse resolution");
+                fprintf(stderr, "Failed to parse resolution.\n");
                 exit(-1);
             }
-            printf("Setting resolution to %dx%d\n", dev.width, dev.height);
+            printf("Setting resolution to %dx%d.\n", dev.width, dev.height);
             break;
         case 'p':
             tmp = determine_pixfmt(optarg);
             if (tmp < 0) {
-                fprintf(stderr, "Unknown pixel format %s\n", optarg);
+                fprintf(stderr, "Failed to recognize pixel format %s.\n", optarg);
                 exit(-1);
             }
             dev.pix_fmt = (char) tmp;
-            printf("Setting pixel format to %s\n", optarg);
+            printf("Setting pixel format to %s.\n", optarg);
             break;
         case 'd':
-            printf("Using device %s\n", optarg);
+            printf("Using device %s.\n", optarg);
             strncpy(ctl_path, optarg, sizeof(ctl_path) - 1);
             break;
         }
