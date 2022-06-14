@@ -50,17 +50,6 @@ static const struct v4l2_frmsize_discrete vcam_sizes[] = {
     {HD_720_WIDTH, HD_720_HEIGHT},
 };
 
-void vcam_update_format_cap(struct vcam_device *dev, bool keep_control)
-{
-    vcam_in_queue_destroy(&dev->in_queue);
-    dev->input_format.width = dev->output_format.width;
-    dev->input_format.height = dev->output_format.height;
-    dev->input_format.bytesperline = dev->output_format.bytesperline;
-    dev->input_format.sizeimage =
-        dev->input_format.height * dev->input_format.bytesperline;
-    vcam_in_queue_setup(&dev->in_queue, dev->input_format.sizeimage);
-}
-
 static int vcam_querycap(struct file *file,
                          void *priv,
                          struct v4l2_capability *cap)
@@ -345,13 +334,13 @@ static int vcam_s_parm(struct file *file,
     return 0;
 }
 
-static int vcam_enum_framesizes(struct file *filp,
+static int vcam_enum_framesizes(struct file *file,
                                 void *priv,
                                 struct v4l2_frmsizeenum *fsize)
 {
     struct v4l2_frmsize_discrete *size_discrete;
 
-    struct vcam_device *dev = (struct vcam_device *) video_drvdata(filp);
+    struct vcam_device *dev = (struct vcam_device *) video_drvdata(file);
     if (!check_supported_pixfmt(dev, fsize->pixel_format))
         return -EINVAL;
 
