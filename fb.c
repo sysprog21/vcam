@@ -85,8 +85,8 @@ static ssize_t vcam_fb_write(struct fb_info *info,
         return 0;
     }
 
-    if (copy_from_user(data + buf->filled, (void __user *) buffer, to_be_copyied) !=
-        0) {
+    if (copy_from_user(data + buf->filled, (void __user *) buffer,
+                       to_be_copyied) != 0) {
         pr_warn("Failed to copy_from_user!");
     }
     buf->filled += to_be_copyied;

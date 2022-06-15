@@ -98,7 +98,8 @@ int remove_device(struct vcam_device_spec *dev)
 
     int res = ioctl(fd, VCAM_IOCTL_DESTROY_DEVICE, dev);
     if (res) {
-        fprintf(stderr, "Failed to remove the device on index %d.\n", dev->idx + 1);
+        fprintf(stderr, "Failed to remove the device on index %d.\n",
+                dev->idx + 1);
     }
 
     close(fd);
@@ -116,7 +117,8 @@ int modify_device(struct vcam_device_spec *dev)
     }
 
     if (ioctl(fd, VCAM_IOCTL_GET_DEVICE, &orig_dev)) {
-        fprintf(stderr, "Failed to find device on index %d.\n", orig_dev.idx + 1);
+        fprintf(stderr, "Failed to find device on index %d.\n",
+                orig_dev.idx + 1);
         close(fd);
         return -1;
     }
@@ -203,7 +205,8 @@ int main(int argc, char *argv[])
         case 'p':
             tmp = determine_pixfmt(optarg);
             if (tmp < 0) {
-                fprintf(stderr, "Failed to recognize pixel format %s.\n", optarg);
+                fprintf(stderr, "Failed to recognize pixel format %s.\n",
+                        optarg);
                 exit(-1);
             }
             dev.pix_fmt = (char) tmp;

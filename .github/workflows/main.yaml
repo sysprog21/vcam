@@ -1,0 +1,23 @@
+name: main
+
+on: [push, pull_request]
+
+jobs:
+  vcam:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout code
+      uses: actions/checkout@v3.0.2
+    - name: make
+      run: make
+      shell: bash
+
+  coding-style:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3.0.2
+    - name: coding convention
+      run: |
+            sudo apt-get install -q -y clang-format-12
+            sh .ci/check-format.sh
+      shell: bash
