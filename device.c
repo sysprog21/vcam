@@ -4,7 +4,6 @@
 #include <linux/time.h>
 #include <linux/version.h>
 #include <media/v4l2-image-sizes.h>
-#include <media/v4l2-rect.h>
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-vmalloc.h>
 
@@ -145,20 +144,6 @@ static void negotiate_resolution(__u32 *width, __u32 *height)
     *height = sz->height;
 }
 
-static void set_crop_resolution(__u32 *width, __u32 *height)
-{
-    /* set the cropping rectangular resolution */
-    struct v4l2_rect crop;
-    struct v4l2_rect r = {0, 0, *width, *height};
-    struct v4l2_rect min_r = {0, 0, r.width * 3 / 4, r.height * 3 / 4};
-    struct v4l2_rect max_r = {0, 0, r.width, r.height};
-    v4l2_rect_set_min_size(&crop, &min_r);
-    v4l2_rect_set_max_size(&crop, &max_r);
-
-    *width = crop.width;
-    *height = crop.height;
-}
-
 static int vcam_try_fmt_vid_cap(struct file *file,
                                 void *priv,
                                 struct v4l2_format *f)
@@ -206,19 +191,10 @@ static int vcam_s_fmt_vid_cap(struct file *file,
     __u32 req_height = f->fmt.pix.height;
 
     struct vcam_device *dev = (struct vcam_device *) video_drvdata(file);
-    unsigned long flags = 0;
 
     ret = vcam_try_fmt_vid_cap(file, priv, f);
     if (ret < 0)
         return ret;
-
-    spin_lock_irqsave(&dev->in_fh_slock, flags);
-    if (dev->fb_isopen || vb2_is_busy(&dev->vb_out_vidq)) {
-        spin_unlock_irqrestore(&dev->in_fh_slock, flags);
-        return -EBUSY;
-    }
-    dev->fb_isopen = true;
-    spin_unlock_irqrestore(&dev->in_fh_slock, flags);
 
     if (dev->conv_crop_on) {
         dev->crop_output_format = f->fmt.pix;
@@ -231,13 +207,6 @@ static int vcam_s_fmt_vid_cap(struct file *file,
     } else if (dev->conv_res_on) {
         dev->output_format = f->fmt.pix;
     }
-
-    if (dev->conv_res_on || dev->conv_crop_on)
-        vcamfb_update(dev);
-
-    spin_lock_irqsave(&dev->in_fh_slock, flags);
-    dev->fb_isopen = false;
-    spin_unlock_irqrestore(&dev->in_fh_slock, flags);
 
     pr_debug("Resolution set to %dx%d\n", dev->output_format.width,
              dev->output_format.height);
@@ -926,6 +895,33 @@ v4l2_registration_failure:
     kfree(vcam);
 vcam_alloc_failure:
     return NULL;
+}
+
+int modify_vcam_device(struct vcam_device *vcam,
+                       struct vcam_device_spec *dev_spec)
+{
+    unsigned long flags = 0;
+
+    spin_lock_irqsave(&vcam->in_fh_slock, flags);
+    if (vcam->fb_isopen) {
+        spin_unlock_irqrestore(&vcam->in_fh_slock, flags);
+        return -EBUSY;
+    }
+    vcam->fb_isopen = true;
+    spin_unlock_irqrestore(&vcam->in_fh_slock, flags);
+
+    fill_v4l2pixfmt(&vcam->input_format, dev_spec);
+    vcamfb_update(vcam);
+
+    spin_lock_irqsave(&vcam->in_fh_slock, flags);
+    vcam->fb_isopen = false;
+    spin_unlock_irqrestore(&vcam->in_fh_slock, flags);
+
+    pr_debug("Input format set (%dx%d)(%dx%d)\n", dev_spec->width,
+             dev_spec->height, vcam->input_format.width,
+             vcam->input_format.height);
+
+    return 0;
 }
 
 void destroy_vcam_device(struct vcam_device *vcam)

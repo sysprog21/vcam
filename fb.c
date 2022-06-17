@@ -1,12 +1,10 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/fb.h>
-#include <linux/proc_fs.h>
 #include <linux/spinlock.h>
 #include <linux/version.h>
 
 #include "fb.h"
-#include "videobuf.h"
 
 struct vcamfb_info {
     struct fb_info info;
@@ -36,6 +34,17 @@ static int vcam_fb_open(struct fb_info *info, int user)
     info->par = dev;
 
     return 0;
+}
+
+static void swap_in_queue_buffers(struct vcam_in_queue *q)
+{
+    struct vcam_in_buffer *tmp;
+    if (!q)
+        return;
+    tmp = q->pending;
+    q->pending = q->ready;
+    q->ready = tmp;
+    q->pending->filled = 0;
 }
 
 static ssize_t vcam_fb_write(struct fb_info *info,
@@ -267,6 +276,20 @@ static struct fb_var_screeninfo vfb_default = {
     .vmode = FB_VMODE_NONINTERLACED,
 };
 
+void set_crop_resolution(__u32 *width, __u32 *height)
+{
+    /* set the cropping rectangular resolution */
+    struct v4l2_rect crop = {0, 0, 0, 0};
+    struct v4l2_rect r = {0, 0, *width, *height};
+    struct v4l2_rect min_r = {0, 0, r.width * 3 / 4, r.height * 3 / 4};
+    struct v4l2_rect max_r = {0, 0, r.width, r.height};
+    v4l2_rect_set_min_size(&crop, &min_r);
+    v4l2_rect_set_max_size(&crop, &max_r);
+
+    *width = crop.width;
+    *height = crop.height;
+}
+
 int vcamfb_init(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data;
@@ -365,17 +388,8 @@ void vcamfb_update(struct vcam_device *dev)
     struct fb_info *info = &fb_data->info;
     struct vcam_in_queue *q = &dev->in_queue;
 
-    /* check input_format */
-    if (dev->input_format.width != dev->output_format.width) {
-        dev->input_format.width = dev->output_format.width;
-        dev->input_format.height = dev->output_format.height;
-        dev->input_format.bytesperline = dev->output_format.bytesperline;
-        dev->input_format.sizeimage =
-            dev->input_format.height * dev->input_format.bytesperline;
-    }
-
-    /* remalloc the framebuffer */
-    if (info->var.xres_virtual != dev->output_format.width) {
+    /* remalloc the framebuffer and vcam_in_queue */
+    if (info->fix.smem_len != dev->input_format.sizeimage) {
         unsigned int size;
         vfree(fb_data->addr);
         fb_data->offset = dev->input_format.sizeimage;
@@ -390,22 +404,20 @@ void vcamfb_update(struct vcam_device *dev)
         /* reset the fb_fix */
         info->fix.smem_len = dev->input_format.sizeimage;
         info->fix.smem_start = (unsigned long) fb_data->addr;
+        info->fix.line_length = dev->input_format.bytesperline;
 
         /* reset the fb_info */
         info->screen_base = (char __iomem *) fb_data->addr;
-    }
 
-    /* reset the fb_var and fb_fix */
-    if (dev->conv_crop_on) {
-        info->var.xres = dev->crop_output_format.width;
-        info->var.yres = dev->crop_output_format.height;
-    } else {
-        info->var.xres = dev->output_format.width;
-        info->var.yres = dev->output_format.height;
+        /* reset the fb_var */
+        info->var.xres = dev->input_format.width;
+        info->var.yres = dev->input_format.height;
+        if (dev->conv_crop_on) {
+            set_crop_resolution(&info->var.xres, &info->var.yres);
+        }
+        info->var.xres_virtual = dev->input_format.width;
+        info->var.yres_virtual = dev->input_format.height;
     }
-    info->var.xres_virtual = dev->input_format.width;
-    info->var.yres_virtual = dev->input_format.height;
-    info->fix.line_length = dev->input_format.bytesperline;
 }
 
 char *vcamfb_get_devnode(struct vcam_device *dev)

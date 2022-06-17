@@ -88,54 +88,16 @@ static int control_iocontrol_modify_input_setting(
     struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *dev;
-    unsigned long flags = 0;
+    int res;
 
     if (ctldev->vcam_device_count <= dev_spec->idx)
         return -EINVAL;
 
     dev = ctldev->vcam_devices[dev_spec->idx];
 
-    spin_lock_irqsave(&dev->in_fh_slock, flags);
-    if (dev->fb_isopen) {
-        spin_unlock_irqrestore(&dev->in_fh_slock, flags);
-        return -EBUSY;
-    }
-    dev->fb_isopen = true;
-    spin_unlock_irqrestore(&dev->in_fh_slock, flags);
+    res = modify_vcam_device(dev, dev_spec);
 
-    if (dev_spec->width && dev_spec->height) {
-        dev->input_format.width = dev_spec->width;
-        dev->input_format.height = dev_spec->height;
-    }
-
-    if (dev_spec->pix_fmt == VCAM_PIXFMT_YUYV)
-        dev->input_format.pixelformat = V4L2_PIX_FMT_YUYV;
-    else if (dev_spec->pix_fmt == VCAM_PIXFMT_RGB24)
-        dev->input_format.pixelformat = V4L2_PIX_FMT_RGB24;
-
-    if (dev->input_format.pixelformat == V4L2_PIX_FMT_YUYV) {
-        dev->input_format.colorspace = V4L2_COLORSPACE_SMPTE170M;
-        dev->input_format.bytesperline = dev_spec->width << 1;
-    } else {
-        dev->input_format.colorspace = V4L2_COLORSPACE_SRGB;
-        dev->input_format.bytesperline = dev_spec->width * 3;
-    }
-    dev->input_format.sizeimage =
-        dev->input_format.bytesperline * dev_spec->height;
-
-    spin_lock_irqsave(&dev->in_q_slock, flags);
-    vcam_in_queue_destroy(&dev->in_queue);
-    vcam_in_queue_setup(&dev->in_queue, dev->input_format.sizeimage);
-
-    pr_debug("Input format set (%dx%d)(%dx%d)\n", dev_spec->width,
-             dev_spec->height, dev->input_format.width,
-             dev->input_format.height);
-    spin_unlock_irqrestore(&dev->in_q_slock, flags);
-
-    spin_lock_irqsave(&dev->in_fh_slock, flags);
-    dev->fb_isopen = false;
-    spin_unlock_irqrestore(&dev->in_fh_slock, flags);
-    return 0;
+    return res;
 }
 
 static int control_iocontrol_destroy_device(struct vcam_device_spec *dev_spec)

@@ -3,6 +3,8 @@
 
 #include "device.h"
 
+void set_crop_resolution(__u32 *width, __u32 *height);
+
 int vcamfb_init(struct vcam_device *dev);
 
 void vcamfb_destroy(struct vcam_device *dev);

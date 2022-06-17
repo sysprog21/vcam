@@ -7,69 +7,6 @@
 
 #include "videobuf.h"
 
-static inline int init_vcam_in_buffer(struct vcam_in_buffer *buf, size_t size)
-{
-    buf->data = vmalloc(size);
-    if (!buf->data) {
-        pr_err("Failed to allocate input buffer\n");
-        return -ENOMEM;
-    }
-    buf->filled = 0;
-    return 0;
-}
-
-static inline void destroy_vcam_in_buffer(struct vcam_in_buffer *buf)
-{
-    vfree(buf->data);
-}
-
-void swap_in_queue_buffers(struct vcam_in_queue *q)
-{
-    struct vcam_in_buffer *tmp;
-    if (!q)
-        return;
-    tmp = q->pending;
-    q->pending = q->ready;
-    q->ready = tmp;
-    q->pending->filled = 0;
-}
-
-int vcam_in_queue_setup(struct vcam_in_queue *q, size_t size)
-{
-    int i;
-    int ret = 0;
-
-    /* Initialize buffers */
-    for (i = 0; i < 2; i++) {
-        ret = init_vcam_in_buffer(&q->buffers[i], size);
-        if (ret)
-            break;
-    }
-
-    if (ret) {
-        pr_err("input queue alloc failure\n");
-        for (; i > 0; i--)
-            destroy_vcam_in_buffer(&q->buffers[i - 1]);
-        return ret;
-    }
-
-    /* Initialize dummy buffer */
-    memset(&q->dummy, 0x00, sizeof(struct vcam_in_buffer));
-
-    /* Initialize pointers to buffers */
-    q->pending = &q->buffers[0];
-    q->ready = &q->buffers[1];
-
-    return ret;
-}
-
-void vcam_in_queue_destroy(struct vcam_in_queue *q)
-{
-    int i;
-    for (i = 0; i < 2; i++)
-        destroy_vcam_in_buffer(&q->buffers[i]);
-}
-
 static int vcam_out_queue_setup(struct vb2_queue *vq,
                                 unsigned int *nbuffers,
                                 unsigned int *nplanes,
