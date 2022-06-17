@@ -5,6 +5,7 @@
 #include <media/v4l2-common.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-ioctl.h>
+#include <media/v4l2-rect.h>
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-v4l2.h>
 
@@ -96,6 +97,8 @@ struct vcam_device {
 
 struct vcam_device *create_vcam_device(size_t idx,
                                        struct vcam_device_spec *dev_spec);
+int modify_vcam_device(struct vcam_device *vcam,
+                       struct vcam_device_spec *dev_spec);
 void destroy_vcam_device(struct vcam_device *vcam);
 
 int submitter_thread(void *data);
