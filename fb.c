@@ -1,6 +1,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/fb.h>
+#include <linux/kernel.h>
 #include <linux/spinlock.h>
 #include <linux/version.h>
 
@@ -45,6 +46,8 @@ static void swap_in_queue_buffers(struct vcam_in_queue *q)
     q->pending = q->ready;
     q->ready = tmp;
     q->pending->filled = 0;
+    q->pending->xbar = 0;
+    q->pending->ybar = 0;
 }
 
 static ssize_t vcam_fb_write(struct fb_info *info,
@@ -54,18 +57,21 @@ static ssize_t vcam_fb_write(struct fb_info *info,
 {
     struct vcam_in_queue *in_q;
     struct vcam_in_buffer *buf;
-    size_t waiting_bytes;
-    size_t to_be_copyied;
+    size_t copy_start;
+    size_t to_be_copied;
     unsigned long flags = 0;
     void *data;
+    size_t bytesperpixel;
+
+    /* virtual resolution and min/max visible resolution's coordinates */
+    size_t line_vir, line_min, line_max;
+    size_t y_vir, y_min, y_max;
 
     struct vcam_device *dev = info->par;
     if (!dev) {
         pr_err("Private data field of file not initialized yet.\n");
         return 0;
     }
-
-    waiting_bytes = dev->input_format.sizeimage;
 
     in_q = &dev->in_queue;
 
@@ -76,17 +82,19 @@ static ssize_t vcam_fb_write(struct fb_info *info,
     }
 
     /* Reset buffer if last write is too old */
-    if (buf->filled && (((int32_t) jiffies - buf->jiffies) / HZ)) {
+    if ((buf->xbar || buf->ybar || buf->filled) &&
+        (((int32_t) jiffies - buf->jiffies) / HZ)) {
         pr_debug("Reseting jiffies, difference %d\n",
                  ((int32_t) jiffies - buf->jiffies));
         buf->filled = 0;
+        buf->xbar = 0;
+        buf->ybar = 0;
     }
     buf->jiffies = jiffies;
 
     /* Fill the buffer */
-    to_be_copyied = length;
-    if ((buf->filled + to_be_copyied) > waiting_bytes)
-        to_be_copyied = waiting_bytes - buf->filled;
+    copy_start = 0;
+    to_be_copied = length;
 
     data = buf->data;
     if (!data) {
@@ -94,19 +102,67 @@ static ssize_t vcam_fb_write(struct fb_info *info,
         return 0;
     }
 
-    if (copy_from_user(data + buf->filled, (void __user *) buffer,
-                       to_be_copyied) != 0) {
-        pr_warn("Failed to copy_from_user!");
+    if (dev->input_format.pixelformat == V4L2_PIX_FMT_RGB24) {
+        bytesperpixel = 3;
+    } else if (dev->input_format.pixelformat == V4L2_PIX_FMT_YUYV) {
+        bytesperpixel = 2;
     }
-    buf->filled += to_be_copyied;
+    line_vir = info->var.xres_virtual * bytesperpixel;
+    line_min = info->var.xoffset * bytesperpixel;
+    line_max = (info->var.xoffset + info->var.xres) * bytesperpixel;
+    y_vir = info->var.yres_virtual;
+    y_min = info->var.yoffset;
+    y_max = (info->var.yoffset + info->var.yres);
 
-    if (buf->filled == waiting_bytes) {
+    while (to_be_copied > 0 && buf->ybar < y_vir) {
+        if (buf->ybar < y_min || buf->ybar >= y_max || buf->xbar >= line_max) {
+            size_t remain = line_vir - buf->xbar;
+            if (remain > to_be_copied) {
+                buf->xbar += to_be_copied;
+                break;
+            } else {
+                copy_start += remain;
+                to_be_copied -= remain;
+                buf->xbar = 0;
+                buf->ybar += 1;
+            }
+        } else {
+            if (buf->xbar < line_min) {
+                size_t abandon = min(line_min - buf->xbar, to_be_copied);
+                copy_start += abandon;
+                to_be_copied -= abandon;
+                buf->xbar += abandon;
+            } else {
+                size_t copyline = min(line_max - buf->xbar, to_be_copied);
+                if (copy_from_user(data + buf->filled,
+                                   (void __user *) (buffer + copy_start),
+                                   copyline) != 0) {
+                    pr_warn("Failed to copy_from_user!");
+                }
+                copy_start += copyline;
+                to_be_copied -= copyline;
+                buf->filled += copyline;
+                buf->xbar += copyline;
+                /* After data is copied, check if buf->xbar reaches the
+                 * border and needs to carry.
+                 */
+                if (buf->xbar == line_vir) {
+                    buf->xbar = 0;
+                    buf->ybar += 1;
+                }
+            }
+        }
+    }
+    /* Check if buf->ybar reaches the border, which means the per-frame
+     * information is complete. Swap the double buffer.
+     */
+    if (buf->ybar == y_vir) {
         spin_lock_irqsave(&dev->in_q_slock, flags);
         swap_in_queue_buffers(in_q);
         spin_unlock_irqrestore(&dev->in_q_slock, flags);
     }
 
-    return to_be_copyied;
+    return length;
 }
 
 
@@ -119,6 +175,8 @@ static int vcam_fb_release(struct fb_info *info, int user)
     dev->fb_isopen = false;
     spin_unlock_irqrestore(&dev->in_fh_slock, flags);
     dev->in_queue.pending->filled = 0;
+    dev->in_queue.pending->xbar = 0;
+    dev->in_queue.pending->ybar = 0;
     return 0;
 }
 
@@ -135,8 +193,8 @@ static int vcam_fb_check_var(struct fb_var_screeninfo *var,
     if (var->yres > var->yres_virtual)
         var->yres_virtual = var->yres;
 
-    var->xres_virtual = var->xoffset + var->xres;
-    var->yres_virtual = var->yoffset + var->yres;
+    var->xoffset = (var->xres_virtual - var->xres) >> 1;
+    var->yoffset = (var->yres_virtual - var->yres) >> 1;
 
     /* check bpp value ALIGN 8 */
     bpp = var->bits_per_pixel;
@@ -310,8 +368,12 @@ int vcamfb_init(struct vcam_device *dev)
     fb_data->offset = dev->input_format.sizeimage;
     q->buffers[0].data = fb_data->addr;
     q->buffers[0].filled = 0;
+    q->buffers[0].xbar = 0;
+    q->buffers[0].ybar = 0;
     q->buffers[1].data = (void *) (fb_data->addr + fb_data->offset);
     q->buffers[1].filled = 0;
+    q->buffers[1].xbar = 0;
+    q->buffers[1].ybar = 0;
     memset(&q->dummy, 0, sizeof(struct vcam_in_buffer));
     q->pending = &q->buffers[0];
     q->ready = &q->buffers[1];
@@ -322,17 +384,12 @@ int vcamfb_init(struct vcam_device *dev)
     vfb_fix.line_length = dev->input_format.bytesperline;
 
     /* set the fb_var */
-    if (dev->conv_crop_on) {
-        vfb_default.xres = dev->crop_output_format.width;
-        vfb_default.yres = dev->crop_output_format.height;
-    } else {
-        vfb_default.xres = dev->input_format.width;
-        vfb_default.yres = dev->input_format.height;
-    }
+    vfb_default.xres = dev->input_format.width;
+    vfb_default.yres = dev->input_format.height;
     vfb_default.bits_per_pixel = 24;
+    vfb_default.xres_virtual = dev->fb_virtual_spec.width;
+    vfb_default.yres_virtual = dev->fb_virtual_spec.height;
     vcam_fb_check_var(&vfb_default, info);
-    vfb_default.xres_virtual = dev->input_format.width;
-    vfb_default.yres_virtual = dev->input_format.height;
 
     /* set the fb_info */
     info->screen_base = (char __iomem *) fb_data->addr;
@@ -398,7 +455,11 @@ void vcamfb_update(struct vcam_device *dev)
         q->buffers[0].data = fb_data->addr;
         q->buffers[1].data = (void *) (fb_data->addr + fb_data->offset);
         q->buffers[0].filled = 0;
+        q->buffers[0].xbar = 0;
+        q->buffers[0].ybar = 0;
         q->buffers[1].filled = 0;
+        q->buffers[1].xbar = 0;
+        q->buffers[1].ybar = 0;
         memset(&q->dummy, 0, sizeof(struct vcam_in_buffer));
 
         /* reset the fb_fix */
@@ -412,11 +473,10 @@ void vcamfb_update(struct vcam_device *dev)
         /* reset the fb_var */
         info->var.xres = dev->input_format.width;
         info->var.yres = dev->input_format.height;
-        if (dev->conv_crop_on) {
-            set_crop_resolution(&info->var.xres, &info->var.yres);
-        }
-        info->var.xres_virtual = dev->input_format.width;
-        info->var.yres_virtual = dev->input_format.height;
+        info->var.xres_virtual = dev->fb_virtual_spec.width;
+        info->var.yres_virtual = dev->fb_virtual_spec.height;
+        info->var.xoffset = (info->var.xres_virtual - info->var.xres) >> 1;
+        info->var.yoffset = (info->var.yres_virtual - info->var.yres) >> 1;
     }
 }
 
