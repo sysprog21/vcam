@@ -23,6 +23,7 @@
 struct vcam_in_buffer {
     void *data;
     size_t filled;
+    size_t xbar, ybar;
     uint32_t jiffies;
 };
 
@@ -87,7 +88,7 @@ struct vcam_device {
     struct v4l2_pix_format output_format;
     struct v4l2_pix_format input_format;
 
-    struct v4l2_pix_format crop_output_format;
+    struct vcam_device_spec fb_virtual_spec;
 
     /* Conversion switches */
     bool conv_pixfmt_on;
