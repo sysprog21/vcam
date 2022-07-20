@@ -85,10 +85,9 @@ struct vcam_device {
     size_t nr_fmts;
     struct vcam_device_format out_fmts[PIXFMTS_MAX];
 
+    struct vcam_device_spec fb_spec;
     struct v4l2_pix_format output_format;
     struct v4l2_pix_format input_format;
-
-    struct vcam_device_spec fb_virtual_spec;
 
     /* Conversion switches */
     bool conv_pixfmt_on;

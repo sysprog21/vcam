@@ -334,12 +334,16 @@ static struct fb_var_screeninfo vfb_default = {
     .vmode = FB_VMODE_NONINTERLACED,
 };
 
-void set_crop_resolution(__u32 *width, __u32 *height)
+void set_crop_resolution(__u32 *width,
+                         __u32 *height,
+                         struct crop_ratio cropratio)
 {
     /* set the cropping rectangular resolution */
     struct v4l2_rect crop = {0, 0, 0, 0};
     struct v4l2_rect r = {0, 0, *width, *height};
-    struct v4l2_rect min_r = {0, 0, r.width * 3 / 4, r.height * 3 / 4};
+    struct v4l2_rect min_r = {
+        0, 0, r.width * cropratio.numerator / cropratio.denominator,
+        r.height * cropratio.numerator / cropratio.denominator};
     struct v4l2_rect max_r = {0, 0, r.width, r.height};
     v4l2_rect_set_min_size(&crop, &min_r);
     v4l2_rect_set_max_size(&crop, &max_r);
@@ -384,11 +388,11 @@ int vcamfb_init(struct vcam_device *dev)
     vfb_fix.line_length = dev->input_format.bytesperline;
 
     /* set the fb_var */
-    vfb_default.xres = dev->input_format.width;
-    vfb_default.yres = dev->input_format.height;
+    vfb_default.xres = dev->fb_spec.width;
+    vfb_default.yres = dev->fb_spec.height;
     vfb_default.bits_per_pixel = 24;
-    vfb_default.xres_virtual = dev->fb_virtual_spec.width;
-    vfb_default.yres_virtual = dev->fb_virtual_spec.height;
+    vfb_default.xres_virtual = dev->fb_spec.xres_virtual;
+    vfb_default.yres_virtual = dev->fb_spec.yres_virtual;
     vcam_fb_check_var(&vfb_default, info);
 
     /* set the fb_info */
@@ -471,10 +475,10 @@ void vcamfb_update(struct vcam_device *dev)
         info->screen_base = (char __iomem *) fb_data->addr;
 
         /* reset the fb_var */
-        info->var.xres = dev->input_format.width;
-        info->var.yres = dev->input_format.height;
-        info->var.xres_virtual = dev->fb_virtual_spec.width;
-        info->var.yres_virtual = dev->fb_virtual_spec.height;
+        info->var.xres = dev->fb_spec.width;
+        info->var.yres = dev->fb_spec.height;
+        info->var.xres_virtual = dev->fb_spec.xres_virtual;
+        info->var.yres_virtual = dev->fb_spec.yres_virtual;
         info->var.xoffset = (info->var.xres_virtual - info->var.xres) >> 1;
         info->var.yoffset = (info->var.yres_virtual - info->var.yres) >> 1;
     }

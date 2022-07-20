@@ -11,9 +11,21 @@
 
 typedef enum { VCAM_PIXFMT_RGB24 = 0x01, VCAM_PIXFMT_YUYV = 0x02 } pixfmt_t;
 
+struct crop_ratio {
+    __u32 numerator;
+    __u32 denominator;
+};
+
 struct vcam_device_spec {
     unsigned int idx;
+
+    /* virtual resolution */
+    __u32 xres_virtual, yres_virtual;
+    /* resolution */
     __u32 width, height;
+
+    struct crop_ratio cropratio;
+
     pixfmt_t pix_fmt;
     char video_node[64];
     char fb_node[64];
