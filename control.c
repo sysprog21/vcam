@@ -70,12 +70,10 @@ static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
         return -EINVAL;
 
     dev = ctldev->vcam_devices[dev_spec->idx];
-    dev_spec->width = dev->input_format.width;
-    dev_spec->height = dev->input_format.height;
-    if (dev->input_format.pixelformat == V4L2_PIX_FMT_YUYV)
-        dev_spec->pix_fmt = VCAM_PIXFMT_YUYV;
-    else
-        dev_spec->pix_fmt = VCAM_PIXFMT_RGB24;
+    dev_spec->width = dev->fb_spec.xres_virtual;
+    dev_spec->height = dev->fb_spec.yres_virtual;
+    dev_spec->pix_fmt = dev->fb_spec.pix_fmt;
+    dev_spec->cropratio = dev->fb_spec.cropratio;
 
     strncpy((char *) &dev_spec->fb_node, (const char *) vcamfb_get_devnode(dev),
             sizeof(dev_spec->fb_node));
@@ -174,6 +172,7 @@ static long control_ioctl(struct file *file,
 static struct vcam_device_spec default_vcam_spec = {
     .width = 640,
     .height = 480,
+    .cropratio = {.numerator = 3, .denominator = 4},
     .pix_fmt = VCAM_PIXFMT_RGB24,
 };
 

@@ -157,10 +157,13 @@ static int vcam_try_fmt_vid_cap(struct file *file,
         negotiate_resolution(&f->fmt.pix.width, &f->fmt.pix.height);
     } else {
         /* set the cropping rectangular resolution */
-        f->fmt.pix.width = f->fmt.pix.width * 4 / 3;
-        f->fmt.pix.height = f->fmt.pix.height * 4 / 3;
+        struct crop_ratio cropratio = dev->fb_spec.cropratio;
+        f->fmt.pix.width =
+            f->fmt.pix.width / cropratio.numerator * cropratio.denominator;
+        f->fmt.pix.height =
+            f->fmt.pix.height / cropratio.numerator * cropratio.denominator;
         negotiate_resolution(&f->fmt.pix.width, &f->fmt.pix.height);
-        set_crop_resolution(&f->fmt.pix.width, &f->fmt.pix.height);
+        set_crop_resolution(&f->fmt.pix.width, &f->fmt.pix.height, cropratio);
     }
 
     f->fmt.pix.field = V4L2_FIELD_NONE;
@@ -839,11 +842,17 @@ struct vcam_device *create_vcam_device(size_t idx,
         dev_spec->height = vcam_sizes[n_avail - 1].height;
     }
 
-    vcam->fb_virtual_spec = *dev_spec;
+    dev_spec->xres_virtual = dev_spec->width;
+    dev_spec->yres_virtual = dev_spec->height;
 
     if (vcam->conv_crop_on) {
-        set_crop_resolution(&dev_spec->width, &dev_spec->height);
+        set_crop_resolution(&dev_spec->width, &dev_spec->height,
+                            dev_spec->cropratio);
+    } else {
+        dev_spec->cropratio.numerator = 1;
+        dev_spec->cropratio.denominator = 1;
     }
+    vcam->fb_spec = *dev_spec;
 
     fill_v4l2pixfmt(&vcam->output_format, dev_spec);
     fill_v4l2pixfmt(&vcam->input_format, dev_spec);
@@ -889,10 +898,17 @@ int modify_vcam_device(struct vcam_device *vcam,
     vcam->fb_isopen = true;
     spin_unlock_irqrestore(&vcam->in_fh_slock, flags);
 
-    vcam->fb_virtual_spec = *dev_spec;
+    dev_spec->xres_virtual = dev_spec->width;
+    dev_spec->yres_virtual = dev_spec->height;
+
     if (vcam->conv_crop_on) {
-        set_crop_resolution(&dev_spec->width, &dev_spec->height);
+        set_crop_resolution(&dev_spec->width, &dev_spec->height,
+                            dev_spec->cropratio);
+    } else {
+        dev_spec->cropratio.numerator = 1;
+        dev_spec->cropratio.denominator = 1;
     }
+    vcam->fb_spec = *dev_spec;
     fill_v4l2pixfmt(&vcam->input_format, dev_spec);
     vcamfb_update(vcam);
     vcam->output_format = vcam->input_format;
@@ -901,9 +917,8 @@ int modify_vcam_device(struct vcam_device *vcam,
     vcam->fb_isopen = false;
     spin_unlock_irqrestore(&vcam->in_fh_slock, flags);
 
-    pr_debug("Input format set (%dx%d)(%dx%d)\n", dev_spec->width,
-             dev_spec->height, vcam->input_format.width,
-             vcam->input_format.height);
+    pr_debug("Input format set (%dx%d)(%dx%d)\n", dev_spec->xres_virtual,
+             dev_spec->yres_virtual, dev_spec->width, dev_spec->height);
 
     return 0;
 }
