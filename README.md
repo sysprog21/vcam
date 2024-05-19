@@ -42,7 +42,7 @@ Expectedly, three device nodes will be created in `/dev`:
 
 In `/dev` directory, device file `fbX` will be created.
 
-The device if initialy configured to process 640x480 RGB24 image format.
+The device is initially configured to process 640x480 RGB24 image format.
 By writing 640x480 RGB24 raw frame data to `/dev/fbX` file the resulting
 video stream will appear on corresponding `/dev/videoX` V4L2 device(s).
 
