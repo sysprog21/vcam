@@ -261,7 +261,11 @@ int __init create_control_device(const char *dev_name)
         goto kmalloc_failure;
     }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+    ctldev->dev_class = class_create(dev_name);
+#else
     ctldev->dev_class = class_create(THIS_MODULE, dev_name);
+#endif
     if (!(ctldev->dev_class)) {
         pr_err("Error creating device class for control device\n");
         ret = -ENODEV;
