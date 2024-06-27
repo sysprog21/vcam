@@ -135,7 +135,11 @@ int vcam_out_videobuf2_setup(struct vcam_device *dev)
     q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
     q->ops = &vcam_vb2_ops;
     q->mem_ops = &vb2_vmalloc_memops;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+    q->min_queued_buffers = 2;
+#else
     q->min_buffers_needed = 2;
+#endif
     q->lock = &dev->vcam_mutex;
 
     return vb2_queue_init(q);
