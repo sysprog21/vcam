@@ -8,7 +8,7 @@
 #include "fb.h"
 
 struct vcamfb_info {
-    struct fb_info info;
+    struct fb_info *info;
     void *addr;
     unsigned int offset;
     char name[FB_NAME_MAXLENGTH];
@@ -363,7 +363,10 @@ int vcamfb_init(struct vcam_device *dev)
     /* malloc vcamfb_info */
     fb_data = vmalloc(sizeof(struct vcamfb_info));
     dev->fb_priv = (void *) fb_data;
-    info = &fb_data->info;
+
+    /* malloc fb_info */
+    fb_data->info = framebuffer_alloc(0, &dev->vdev.dev);
+    info = fb_data->info;
 
     /* malloc framebuffer and init framebuffer */
     size = dev->input_format.sizeimage * 2;
@@ -402,8 +405,6 @@ int vcamfb_init(struct vcam_device *dev)
     info->fbops = &vcamfb_ops;
     info->par = dev;
     info->pseudo_palette = NULL;
-    info->flags = FBINFO_FLAG_DEFAULT;
-    info->device = &dev->vdev.dev;
     INIT_LIST_HEAD(&info->modelist);
 
     /* set the fb_cmap */
@@ -428,25 +429,33 @@ int vcamfb_init(struct vcam_device *dev)
 
 fb_alloc_failure:
     fb_dealloc_cmap(&info->cmap);
+    framebuffer_release(info);
     return -EINVAL;
 }
 
 void vcamfb_destroy(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data = (struct vcamfb_info *) dev->fb_priv;
-    struct fb_info *info = &fb_data->info;
+    struct fb_info *info;
+
+    if (!fb_data)
+        return;
+
+    info = fb_data->info;
     if (info) {
         unregister_framebuffer(info);
-        vfree(fb_data->addr);
         fb_dealloc_cmap(&info->cmap);
-        vfree(dev->fb_priv);
+        framebuffer_release(info);
     }
+
+    vfree(fb_data->addr);
+    vfree(fb_data);
 }
 
 void vcamfb_update(struct vcam_device *dev)
 {
     struct vcamfb_info *fb_data = (struct vcamfb_info *) dev->fb_priv;
-    struct fb_info *info = &fb_data->info;
+    struct fb_info *info = fb_data->info;
     struct vcam_in_queue *q = &dev->in_queue;
 
     /* remalloc the framebuffer and vcam_in_queue */
