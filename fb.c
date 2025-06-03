@@ -4,6 +4,7 @@
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
 #include <linux/version.h>
+#include <linux/vmalloc.h>
 
 #include "fb.h"
 
