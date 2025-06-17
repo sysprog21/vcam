@@ -3,7 +3,7 @@
 #include <linux/spinlock.h>
 #include <linux/vmalloc.h>
 #include <media/videobuf2-core.h>
-#include <media/videobuf2-vmalloc.h>
+#include <media/videobuf2-dma-contig.h>
 
 #include "videobuf.h"
 
@@ -114,6 +114,23 @@ static void vcam_outbuf_unlock(struct vb2_queue *vq)
     mutex_unlock(&dev->vcam_mutex);
 }
 
+static int vcam_buf_init(struct vb2_buffer *vb)
+{
+    struct vcam_out_buffer *buf =
+        container_of(vb, struct vcam_out_buffer, vb.vb2_buf);
+
+    buf->filled = 0;
+    INIT_LIST_HEAD(&buf->list);
+
+    pr_debug("vcam_buf_init: buffer initialized\n");
+    return 0;
+}
+
+static void vcam_buf_cleanup(struct vb2_buffer *vb)
+{
+    pr_debug("vcam_buf_cleanup called\n");
+}
+
 static const struct vb2_ops vcam_vb2_ops = {
     .queue_setup = vcam_out_queue_setup,
     .buf_prepare = vcam_out_buffer_prepare,
@@ -122,6 +139,8 @@ static const struct vb2_ops vcam_vb2_ops = {
     .stop_streaming = vcam_stop_streaming,
     .wait_prepare = vcam_outbuf_unlock,
     .wait_finish = vcam_outbuf_lock,
+    .buf_init = vcam_buf_init,
+    .buf_cleanup = vcam_buf_cleanup,
 };
 
 int vcam_out_videobuf2_setup(struct vcam_device *dev)
@@ -129,12 +148,12 @@ int vcam_out_videobuf2_setup(struct vcam_device *dev)
     struct vb2_queue *q = &dev->vb_out_vidq;
 
     q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    q->io_modes = VB2_MMAP | VB2_USERPTR | VB2_READ;
+    q->io_modes = VB2_MMAP | VB2_USERPTR | VB2_READ | VB2_DMABUF;
     q->drv_priv = dev;
     q->buf_struct_size = sizeof(struct vcam_out_buffer);
     q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
     q->ops = &vcam_vb2_ops;
-    q->mem_ops = &vb2_vmalloc_memops;
+    q->mem_ops = &vb2_dma_contig_memops;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
     q->min_queued_buffers = 2;
 #else
