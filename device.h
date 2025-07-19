@@ -89,6 +89,9 @@ struct vcam_device {
     struct v4l2_pix_format output_format;
     struct v4l2_pix_format input_format;
 
+    /* Memory type */
+    memtype_t mem_type;
+
     /* Conversion switches */
     bool conv_pixfmt_on;
     bool conv_res_on;

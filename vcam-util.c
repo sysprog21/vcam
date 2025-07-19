@@ -10,14 +10,14 @@
 
 #include "vcam.h"
 
-static const char *short_options = "hcm:r:ls:p:d:";
+static const char *short_options = "hcm:r:ls:p:d:t:";
 
 const struct option long_options[] = {
-    {"help", 0, NULL, 'h'},   {"create", 0, NULL, 'c'},
-    {"modify", 1, NULL, 'm'}, {"list", 0, NULL, 'l'},
-    {"size", 1, NULL, 's'},   {"pixfmt", 1, NULL, 'p'},
-    {"device", 1, NULL, 'd'}, {"remove", 1, NULL, 'r'},
-    {NULL, 0, NULL, 0}};
+    {"help", 0, NULL, 'h'},    {"create", 0, NULL, 'c'},
+    {"modify", 1, NULL, 'm'},  {"list", 0, NULL, 'l'},
+    {"size", 1, NULL, 's'},    {"pixfmt", 1, NULL, 'p'},
+    {"device", 1, NULL, 'd'},  {"remove", 1, NULL, 'r'},
+    {"memtype", 1, NULL, 't'}, {NULL, 0, NULL, 0}};
 
 const char *help =
     " -h --help                            Print this informations.\n"
@@ -37,6 +37,7 @@ const char *help =
     "and apply with crop ratio.\n"
     "\n"
     " -p --pixfmt  pix_fmt                 Specify pixel format (rgb24,yuyv).\n"
+    " -t --memtype mem_type                Specify memory type (mmap,dmabuf).\n"
     " -d --device  /dev/*                  Control device node.\n";
 
 enum ACTION { ACTION_NONE, ACTION_CREATE, ACTION_DESTROY, ACTION_MODIFY };
@@ -45,6 +46,7 @@ struct vcam_device_spec device_template = {
     .width = 640,
     .height = 480,
     .pix_fmt = VCAM_PIXFMT_RGB24,
+    .mem_type = VCAM_MEMORY_MMAP,
     .video_node = "",
     .fb_node = "",
 };
@@ -102,6 +104,14 @@ int determine_pixfmt(char *pixfmt_str)
     return -1;
 }
 
+int determine_memtype(char *memtype_str)
+{
+    if (!strncmp(memtype_str, "mmap", 4))
+        return VCAM_MEMORY_MMAP;
+    if (!strncmp(memtype_str, "dmabuf", 6))
+        return VCAM_MEMORY_DMABUF;
+    return -1;
+}
 int create_device(struct vcam_device_spec *dev)
 {
     int fd = open(ctl_path, O_RDWR);
@@ -117,6 +127,9 @@ int create_device(struct vcam_device_spec *dev)
 
     if (!dev->pix_fmt)
         dev->pix_fmt = device_template.pix_fmt;
+
+    if (!dev->mem_type)
+        dev->mem_type = device_template.mem_type;
 
     int res = ioctl(fd, VCAM_IOCTL_CREATE_DEVICE, dev);
     if (res) {
@@ -170,6 +183,9 @@ int modify_device(struct vcam_device_spec *dev)
     if (!dev->pix_fmt)
         dev->pix_fmt = orig_dev.pix_fmt;
 
+    if (!dev->mem_type)
+        dev->mem_type = orig_dev.mem_type;
+
     if (!dev->cropratio.numerator || !dev->cropratio.denominator)
         dev->cropratio = orig_dev.cropratio;
 
@@ -195,10 +211,11 @@ int list_devices()
     printf("Available virtual V4L2 compatible devices:\n");
     while (!ioctl(fd, VCAM_IOCTL_GET_DEVICE, &dev)) {
         dev.idx++;
-        printf("%d. %s(%d,%d,%d/%d,%s) -> %s\n", dev.idx, dev.fb_node,
+        printf("%d. %s(%d,%d,%d/%d,%s,%s) -> %s\n", dev.idx, dev.fb_node,
                dev.width, dev.height, dev.cropratio.numerator,
                dev.cropratio.denominator,
                dev.pix_fmt == VCAM_PIXFMT_RGB24 ? "rgb24" : "yuyv",
+               dev.mem_type == VCAM_MEMORY_MMAP ? "mmap" : "dmabuf",
                dev.video_node);
     }
     close(fd);
@@ -257,6 +274,16 @@ int main(int argc, char *argv[])
             }
             dev.pix_fmt = (char) tmp;
             printf("Setting pixel format to %s.\n", optarg);
+            break;
+        case 't':
+            tmp = determine_memtype(optarg);
+            if (tmp < 0) {
+                fprintf(stderr, "Failed to recognize memory type %s.\n",
+                        optarg);
+                exit(-1);
+            }
+            dev.mem_type = (char) tmp;
+            printf("Setting memory type to %s.\n", optarg);
             break;
         case 'd':
             printf("Using device %s.\n", optarg);

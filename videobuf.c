@@ -4,6 +4,7 @@
 #include <linux/vmalloc.h>
 #include <media/videobuf2-core.h>
 #include <media/videobuf2-dma-contig.h>
+#include <media/videobuf2-vmalloc.h>
 
 #include "videobuf.h"
 
@@ -153,7 +154,15 @@ int vcam_out_videobuf2_setup(struct vcam_device *dev)
     q->buf_struct_size = sizeof(struct vcam_out_buffer);
     q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
     q->ops = &vcam_vb2_ops;
-    q->mem_ops = &vb2_dma_contig_memops;
+    pr_info("memory type %d\n", dev->mem_type);
+    switch (dev->mem_type) {
+    case VCAM_MEMORY_MMAP:
+        q->mem_ops = &vb2_vmalloc_memops;
+        break;
+    case VCAM_MEMORY_DMABUF:
+        q->mem_ops = &vb2_dma_contig_memops;
+        break;
+    }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
     q->min_queued_buffers = 2;
 #else

@@ -27,7 +27,7 @@ After running `make`, you should be able to generate the following files:
 
 Before loading this kernel module, you have to satisfy its dependency:
 ```shell
-$ sudo modprobe -a videobuf2_vmalloc videobuf2_v4l2
+$ sudo modprobe -a videobuf2_vmalloc videobuf2_v4l2 videobuf2-dma-contig
 ```
 
 The module can be loaded to Linux kernel by runnning the command:
@@ -56,7 +56,7 @@ $ sudo ./vcam-util -l
 You should get:
 ```
 Available virtual V4L2 compatible devices:
-1. fbX(640,480,rgb24) -> /dev/video0
+1. fbX(640,480,rgb24,mmap) -> /dev/video0
 ```
 
 You can use this command to check if the driver is ok:
