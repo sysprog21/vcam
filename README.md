@@ -59,6 +59,12 @@ Available virtual V4L2 compatible devices:
 1. fbX(640,480,rgb24,mmap) -> /dev/video0
 ```
 
+The default memory type is MMAP. You can switch to DMA-BUF using the `-t` option, for example:
+```shell
+$ sudo ./vcam-util -c -t dmabuf
+```
+The DMA-BUF framework provides a unified way to share buffers across multiple devices.
+
 You can use this command to check if the driver is ok:
 ```shell
 $ sudo v4l2-compliance -d /dev/videoX -f
