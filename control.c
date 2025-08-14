@@ -73,6 +73,7 @@ static int control_iocontrol_get_device(struct vcam_device_spec *dev_spec)
     dev_spec->width = dev->fb_spec.xres_virtual;
     dev_spec->height = dev->fb_spec.yres_virtual;
     dev_spec->pix_fmt = dev->fb_spec.pix_fmt;
+    dev_spec->mem_type = dev->fb_spec.mem_type;
     dev_spec->cropratio = dev->fb_spec.cropratio;
 
     strncpy((char *) &dev_spec->fb_node, (const char *) vcamfb_get_devnode(dev),
@@ -174,6 +175,7 @@ static struct vcam_device_spec default_vcam_spec = {
     .height = 480,
     .cropratio = {.numerator = 3, .denominator = 4},
     .pix_fmt = VCAM_PIXFMT_RGB24,
+    .mem_type = VCAM_MEMORY_MMAP,
 };
 
 int request_vcam_device(struct vcam_device_spec *dev_spec)
