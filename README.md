@@ -30,7 +30,7 @@ Before loading this kernel module, you have to satisfy its dependency:
 $ sudo modprobe -a videobuf2_vmalloc videobuf2_v4l2 videobuf2-dma-contig
 ```
 
-The module can be loaded to Linux kernel by runnning the command:
+The module can be loaded to Linux kernel by running the command:
 ```shell
 $ sudo insmod vcam.ko
 ```
@@ -113,7 +113,7 @@ Frame buffer device information:
 ```
 
 Available parameters for `vcam` kernel module:
-* `devices_max` - Maximal number of devices. The default is 8.
+* `devices_max` - Maximum number of devices. The default is 8.
 * `create_devices` - Number of devices to be created during initialization. The default is 1.
 * `allow_pix_conversion` - Allow pixel format conversion from RGB24 to YUYV. The default is OFF.
 * `allow_scaling` - Allow image scaling from 480p to 720p. The default is OFF.
