@@ -306,25 +306,14 @@ static int vcam_enum_framesizes(struct file *file,
         size_discrete = &fsize->discrete;
         size_discrete->width = dev->output_format.width;
         size_discrete->height = dev->output_format.height;
-    } else if (dev->conv_res_on) {
-        if (fsize->index > 0)
+    } else {
+        if (fsize->index >= ARRAY_SIZE(vcam_sizes))
             return -EINVAL;
 
         fsize->type = V4L2_FRMSIZE_TYPE_DISCRETE;
         size_discrete = &fsize->discrete;
-        size_discrete->width = dev->output_format.width;
-        size_discrete->height = dev->output_format.height;
-    } else {
-        if (fsize->index > 0)
-            return -EINVAL;
-
-        fsize->type = V4L2_FRMSIZE_TYPE_STEPWISE;
-        fsize->stepwise.min_width = 64;
-        fsize->stepwise.max_width = 1280;
-        fsize->stepwise.step_width = 2;
-        fsize->stepwise.min_height = 64;
-        fsize->stepwise.max_height = 720;
-        fsize->stepwise.step_height = 2;
+        size_discrete->width = vcam_sizes[fsize->index].width;
+        size_discrete->height = vcam_sizes[fsize->index].height;
     }
 
     return 0;
