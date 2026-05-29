@@ -21,7 +21,7 @@ static int vcam_fb_open(struct fb_info *info, int user)
 
     struct vcam_device *dev = info->par;
     if (!dev) {
-        pr_err("Private data field of PDE not initilized.\n");
+        pr_err("Private data field of PDE not initialized.\n");
         return -ENODEV;
     }
 
@@ -85,7 +85,7 @@ static ssize_t vcam_fb_write(struct fb_info *info,
     /* Reset buffer if last write is too old */
     if ((buf->xbar || buf->ybar || buf->filled) &&
         (((int32_t) jiffies - buf->jiffies) / HZ)) {
-        pr_debug("Reseting jiffies, difference %d\n",
+        pr_debug("Resetting jiffies, difference %d\n",
                  ((int32_t) jiffies - buf->jiffies));
         buf->filled = 0;
         buf->xbar = 0;

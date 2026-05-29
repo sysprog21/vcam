@@ -142,7 +142,7 @@ static long control_ioctl(struct file *file,
     }
     switch (iocontrol_cmd) {
     case VCAM_IOCTL_CREATE_DEVICE:
-        pr_debug("Requesing new device\n");
+        pr_debug("Requesting new device\n");
         ret = request_vcam_device(&dev_spec);
         break;
     case VCAM_IOCTL_DESTROY_DEVICE:
