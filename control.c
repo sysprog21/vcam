@@ -42,15 +42,9 @@ static ssize_t control_read(struct file *file,
                             size_t length,
                             loff_t *offset)
 {
-    int len;
     static const char *str = "Virtual V4L2 compatible camera device\n";
     pr_debug("read %p %dB\n", buffer, (int) length);
-    len = strlen(str);
-    if (len < length)
-        len = length;
-    if (copy_to_user(buffer, str, len) != 0)
-        pr_warn("Failed to copy_to_user!");
-    return len;
+    return simple_read_from_buffer(buffer, length, offset, str, strlen(str));
 }
 
 static ssize_t control_write(struct file *file,
