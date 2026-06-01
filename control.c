@@ -217,8 +217,7 @@ static struct control_device *alloc_control_device(void)
         sizeof(struct vcam_device *) * devices_max, GFP_KERNEL);
     if (!(res->vcam_devices))
         goto vcam_alloc_failure;
-    memset(res->vcam_devices, 0x00,
-           sizeof(struct vcam_devices *) * devices_max);
+    memset(res->vcam_devices, 0x00, sizeof(struct vcam_device *) * devices_max);
     res->vcam_device_count = 0;
 
     return res;
