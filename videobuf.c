@@ -86,22 +86,25 @@ static void vcam_stop_streaming(struct vb2_queue *vb2_q)
     struct vcam_device *dev = vb2_q->drv_priv;
     struct vcam_out_queue *q = &dev->vcam_out_vidq;
     unsigned long flags = 0;
+    LIST_HEAD(tmp_list);
 
-    /* Stop running threads */
     if (dev->sub_thr_id)
         kthread_stop(dev->sub_thr_id);
-
     dev->sub_thr_id = NULL;
-    /* Empty buffer queue */
+
+    /* Collect buffers under spinlock, return them to vb2 outside it.
+     * vb2_buffer_done() must not be called while holding a spinlock. */
     spin_lock_irqsave(&dev->out_q_slock, flags);
-    while (!list_empty(&q->active)) {
+    list_splice_init(&q->active, &tmp_list);
+    spin_unlock_irqrestore(&dev->out_q_slock, flags);
+
+    while (!list_empty(&tmp_list)) {
         struct vcam_out_buffer *buf =
-            list_entry(q->active.next, struct vcam_out_buffer, list);
+            list_entry(tmp_list.next, struct vcam_out_buffer, list);
         list_del(&buf->list);
         vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_ERROR);
         pr_debug("Throwing out buffer\n");
     }
-    spin_unlock_irqrestore(&dev->out_q_slock, flags);
 }
 
 static void vcam_outbuf_lock(struct vb2_queue *vq)
