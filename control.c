@@ -96,27 +96,31 @@ static int control_iocontrol_modify_input_setting(
 static int control_iocontrol_destroy_device(struct vcam_device_spec *dev_spec)
 {
     struct vcam_device *dev;
-    unsigned long flags = 0;
+    unsigned long ctldev_flags = 0;
+    unsigned long dev_flags = 0;
     int i;
 
-    if (ctldev->vcam_device_count <= dev_spec->idx)
+    spin_lock_irqsave(&ctldev->vcam_devices_lock, ctldev_flags);
+    if (ctldev->vcam_device_count <= dev_spec->idx) {
+        spin_unlock_irqrestore(&ctldev->vcam_devices_lock, ctldev_flags);
         return -EINVAL;
+    }
 
     dev = ctldev->vcam_devices[dev_spec->idx];
 
-    spin_lock_irqsave(&dev->in_fh_slock, flags);
+    spin_lock_irqsave(&dev->in_fh_slock, dev_flags);
     if (dev->fb_isopen || vb2_is_busy(&dev->vb_out_vidq)) {
-        spin_unlock_irqrestore(&dev->in_fh_slock, flags);
+        spin_unlock_irqrestore(&dev->in_fh_slock, dev_flags);
+        spin_unlock_irqrestore(&ctldev->vcam_devices_lock, ctldev_flags);
         return -EBUSY;
     }
     dev->fb_isopen = true;
-    spin_unlock_irqrestore(&dev->in_fh_slock, flags);
+    spin_unlock_irqrestore(&dev->in_fh_slock, dev_flags);
 
-    spin_lock_irqsave(&ctldev->vcam_devices_lock, flags);
-    for (i = dev_spec->idx; i < (ctldev->vcam_device_count); i++)
+    for (i = dev_spec->idx; i + 1 < (ctldev->vcam_device_count); i++)
         ctldev->vcam_devices[i] = ctldev->vcam_devices[i + 1];
     ctldev->vcam_devices[--ctldev->vcam_device_count] = NULL;
-    spin_unlock_irqrestore(&ctldev->vcam_devices_lock, flags);
+    spin_unlock_irqrestore(&ctldev->vcam_devices_lock, ctldev_flags);
 
     destroy_vcam_device(dev);
 
