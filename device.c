@@ -49,6 +49,10 @@ static const struct v4l2_frmsize_discrete vcam_sizes[] = {
     {HD_720_WIDTH, HD_720_HEIGHT},
 };
 
+static const struct v4l2_fract vcam_frame_interval_min = {1001, 60000};
+static const struct v4l2_fract vcam_frame_interval_max = {1001, 1001};
+static const struct v4l2_fract vcam_frame_interval_default = {1001, 30000};
+
 static int vcam_querycap(struct file *file,
                          void *priv,
                          struct v4l2_capability *cap)
@@ -230,12 +234,9 @@ static int vcam_enum_frameintervals(struct file *file,
 
     fival->type = V4L2_FRMIVAL_TYPE_STEPWISE;
     frm_step = &fival->stepwise;
-    frm_step->min.numerator = 1001;
-    frm_step->min.denominator = 60000;
-    frm_step->max.numerator = 1001;
-    frm_step->max.denominator = 1001;
-    frm_step->step.numerator = 1001;
-    frm_step->step.denominator = 60000;
+    frm_step->min = vcam_frame_interval_min;
+    frm_step->max = vcam_frame_interval_max;
+    frm_step->step = vcam_frame_interval_min;
 
     return 0;
 }
@@ -255,11 +256,28 @@ static int vcam_g_parm(struct file *file,
 
     memset(cp, 0x00, sizeof(struct v4l2_captureparm));
     cp->capability = V4L2_CAP_TIMEPERFRAME;
-    cp->timeperframe = dev->output_fps;
+    cp->timeperframe = dev->frame_interval;
     cp->extendedmode = 0;
     cp->readbuffers = 1;
 
     return 0;
+}
+
+static void clamp_frame_interval(struct v4l2_fract *interval)
+{
+    u64 value = (u64) interval->numerator *
+                vcam_frame_interval_min.denominator;
+    u64 min = (u64) vcam_frame_interval_min.numerator *
+              interval->denominator;
+    u64 max_value = (u64) interval->numerator *
+                    vcam_frame_interval_max.denominator;
+    u64 max = (u64) vcam_frame_interval_max.numerator *
+              interval->denominator;
+
+    if (value < min)
+        *interval = vcam_frame_interval_min;
+    else if (max_value > max)
+        *interval = vcam_frame_interval_max;
 }
 
 static int vcam_s_parm(struct file *file,
@@ -277,14 +295,16 @@ static int vcam_s_parm(struct file *file,
 
     cp->capability = V4L2_CAP_TIMEPERFRAME;
     if (!cp->timeperframe.numerator || !cp->timeperframe.denominator)
-        cp->timeperframe = dev->output_fps;
-    else
-        dev->output_fps = cp->timeperframe;
+        cp->timeperframe = dev->frame_interval;
+    else {
+        clamp_frame_interval(&cp->timeperframe);
+        dev->frame_interval = cp->timeperframe;
+    }
     cp->extendedmode = 0;
     cp->readbuffers = 1;
 
-    pr_debug("FPS set to %d/%d\n", cp->timeperframe.numerator,
-             cp->timeperframe.denominator);
+    pr_debug("Frame interval set to %d/%d\n",
+             cp->timeperframe.numerator, cp->timeperframe.denominator);
     return 0;
 }
 
@@ -661,10 +681,9 @@ int submitter_thread(void *data)
 
     while (!kthread_should_stop()) {
         struct vcam_out_buffer *buf;
-        int timeout_ms, timeout;
-
-        /* Do something and sleep */
-        int computation_time_jiff = jiffies;
+        unsigned long frame_interval;
+        unsigned long processing_start = jiffies;
+        unsigned long processing_time;
         spin_lock_irqsave(&dev->out_q_slock, flags);
         if (list_empty(&q->active)) {
             pr_debug("Buffer queue is empty\n");
@@ -691,28 +710,17 @@ int submitter_thread(void *data)
         }
 
     have_a_nap:
-        if (!dev->output_fps.denominator) {
-            dev->output_fps.numerator = 1001;
-            dev->output_fps.denominator = 30000;
-        }
-        timeout_ms = dev->output_fps.denominator / dev->output_fps.numerator;
-        if (!timeout_ms) {
-            dev->output_fps.numerator = 1001;
-            dev->output_fps.denominator = 60000;
-            timeout_ms =
-                dev->output_fps.denominator / dev->output_fps.numerator;
-        }
+        if (!dev->frame_interval.denominator)
+            dev->frame_interval = vcam_frame_interval_default;
 
-        /* Compute timeout and update FPS */
-        computation_time_jiff = jiffies - computation_time_jiff;
-        timeout = msecs_to_jiffies(timeout_ms);
-        if (computation_time_jiff > timeout) {
-            int computation_time_ms = msecs_to_jiffies(computation_time_jiff);
-            dev->output_fps.numerator = 1001;
-            dev->output_fps.denominator = 1000 * computation_time_ms;
-        } else if (timeout > computation_time_jiff) {
-            schedule_timeout_interruptible(timeout - computation_time_jiff);
-        }
+        frame_interval = max_t(
+            unsigned long, 1,
+            DIV_ROUND_CLOSEST_ULL(
+                (u64) dev->frame_interval.numerator * HZ,
+                dev->frame_interval.denominator));
+        processing_time = jiffies - processing_start;
+        if (frame_interval > processing_time)
+            schedule_timeout_interruptible(frame_interval - processing_time);
     }
 
     return 0;
@@ -856,8 +864,7 @@ struct vcam_device *create_vcam_device(size_t idx,
     }
     vcam->fb_isopen = 0;
 
-    vcam->output_fps.numerator = 1001;
-    vcam->output_fps.denominator = 30000;
+    vcam->frame_interval = vcam_frame_interval_default;
 
     return vcam;
 
