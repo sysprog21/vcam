@@ -67,8 +67,8 @@ struct vcam_device {
     struct vb2_queue vb_out_vidq;
     struct vcam_out_queue vcam_out_vidq;
     spinlock_t out_q_slock;
-    /* Output framerate */
-    struct v4l2_fract output_fps;
+    /* Output frame interval */
+    struct v4l2_fract frame_interval;
 
     /* Input framebuffer */
     char vcam_fb_fname[FB_NAME_MAXLENGTH];
