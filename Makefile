@@ -17,3 +17,7 @@ kmod:
 clean:
 	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 	$(RM) vcam-util
+
+.PHONY: test-v4l2
+test-v4l2:
+	./scripts/test-v4l2.sh
