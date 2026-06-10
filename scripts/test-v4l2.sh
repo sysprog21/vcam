@@ -30,9 +30,13 @@ sudo insmod vcam.ko
 echo
 
 echo "== Detect video device =="
-sudo ./vcam-util -l | tee "${ARTIFACT_DIR}/vcam-util-list.txt"
-VIDEO_DEV="$(sudo ./vcam-util -l |
-    awk '/\/dev\/video[0-9]+/ {print $NF; exit}')"
+VCAM_LIST="$(sudo ./vcam-util -l)"
+printf '%s\n' "${VCAM_LIST}" | tee "${ARTIFACT_DIR}/vcam-util-list.txt"
+VIDEO_DEV="$(printf '%s\n' "${VCAM_LIST}" |
+    awk 'match($0, /\/dev\/video[0-9]+/) {
+        print substr($0, RSTART, RLENGTH)
+        exit
+    }')"
 
 if [[ -z "${VIDEO_DEV}" ]]; then
     echo "ERROR: cannot find a vcam video device"
