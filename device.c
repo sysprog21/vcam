@@ -187,6 +187,9 @@ static int vcam_s_fmt_vid_cap(struct file *file,
 
     struct vcam_device *dev = (struct vcam_device *) video_drvdata(file);
 
+    if (vb2_is_busy(&dev->vb_out_vidq))
+        return -EBUSY;
+
     ret = vcam_try_fmt_vid_cap(file, priv, f);
     if (ret < 0)
         return ret;
